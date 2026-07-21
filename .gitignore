@@ -1,0 +1,23 @@
+# Virtual environment (NEVER commit — ~1 GB, recreate from requirements.txt)
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Claude Code local settings
+.claude/
+
+# Scratch
+scratchpad/
+*.tmp

@@ -1,0 +1,14 @@
+{
+  "one_step_naive": {
+    "MAE": 37.057992495309556,
+    "MAPE": 0.7880244494414848,
+    "RMSE": 56.162411242621744,
+    "rule": "pred[t] = actual[t-1]"
+  },
+  "multi_step_naive": {
+    "MAE": 1788.88521575985,
+    "MAPE": 33.23302395277787,
+    "RMSE": 2162.5262354182078,
+    "rule": "pred[t] = last training value (flat)"
+  }
+}
