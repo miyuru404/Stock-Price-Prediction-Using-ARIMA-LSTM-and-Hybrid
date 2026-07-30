@@ -1,0 +1,5 @@
+model,n,r2,finance_slope,bank_slope,interaction_coef,interaction_se,interaction_t,interaction_p
+d_spread lag 0,1014,0.0174,2.3421,-2.3047,-4.6467,1.2351,-3.7622,0.0002
+d_spread lag 1,1014,0.0052,0.9191,-1.1891,-2.1082,2.3707,-0.8893,0.3739
+d_spread lag 2,1008,0.0029,0.1194,-0.7138,-0.8332,1.4154,-0.5887,0.5561
+d_spread lag 3,1002,0.0059,0.4204,-1.4784,-1.8988,0.9852,-1.9274,0.0539
