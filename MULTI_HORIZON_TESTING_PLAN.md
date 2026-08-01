@@ -35,6 +35,16 @@
 - **Technical features are now exhausted.** Phases A and B together say: nothing in the price
   chart predicts HNB at any horizon from 1 day to 1 year. The remaining hope is Phase C+
   (macro / events / sentiment) — information that is *not* in the chart.
+- **Phase C done (2026-08-01):** + macro interest rates (13 features), 35-day publication-lag
+  guard so no rate is seen before it was released. **Mean gain −2.8 pp; 0/9 beat baseline.**
+  Not just negative — **unstable**: gain swings −22.3 to +10.3 pp, and return RMSE blows out to
+  1.37× the train-mean null (A/B sat at ~0.99). That is overfitting, not weak signal.
+- **BIG METHODOLOGY LESSON (Phase C2 diagnostic):** rate **levels** are non-stationary and get
+  memorised ("rates were 15% in 2022") — worthless out of sample. Dropping levels and keeping only
+  **changes** recovered **+3.4 pp** (1-year went 4.5% → 49.7%). **Always feed macro as changes,
+  never levels.** Applies to every future phase.
+- Even in change form, macro still beats the baseline at **0/9** horizons. Rates explain bank
+  returns *contemporaneously* (the earlier spread work) but do **not forecast** them.
 
 ---
 
@@ -150,8 +160,9 @@ naive "no change" (return).
 | Multi-horizon runner (all horizons, Tier-1, XGBoost+Logistic+baselines) | ✅ done — **0/9 horizons beat baseline** |
 | Return % target alongside direction | ✅ done — RMSE ≈ train-mean drift; sign edge 0/9 (real) |
 | Phase B ablation (+Tier-2: RSI, MACD, volume) | ✅ done — **gain −1.1 pp, 0/9 beat baseline** |
-| Phase C ablation (+macro) | ⏳ NEXT |
-| Step-by-step indicator ablation (Tiers 3→4) | ⏳ to do |
+| Phase C ablation (+macro rates) | ✅ done — **gain −2.8 pp, 0/9 beat baseline** |
+| Phase D ablation (+sector: ASPI, peers) | ⏳ NEXT |
+| Step-by-step indicator ablation (Tier 4: events, sentiment) | ⏳ to do |
 | Collect macro (inflation/FX/M2), dividends, sentiment | ⏳ to do |
 | Sector-aware run (banks/finance/control) | ⏳ to do |
 | Calibrated confidence + economic (trading) backtest | ⏳ later |
