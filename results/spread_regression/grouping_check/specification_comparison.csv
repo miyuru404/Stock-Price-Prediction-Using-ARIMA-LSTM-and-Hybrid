@@ -1,0 +1,5 @@
+spec,g1,g2,g1_members,g2_members,g1_slope_l0,g2_slope_l0,interaction_l0,interaction_p_l0,n,r2,sig_lags,ex2022_p,winsor_p,control_mean_coef,control_max_abs_t,control_any_sig,survives_all
+A_original,Banks,Finance,HNB+COMB+SAMP,LOFC+LOLC+LFIN,-2.3047,2.3421,-4.6467,0.0002,1014,0.0174,0,0.006,0.0,-0.1156,0.2152,False,True
+B_drop_conglomerate,Banks,Finance,HNB+COMB+SAMP,LOFC+LFIN+CFIN,-2.3047,0.7125,-3.0172,0.0021,1014,0.016,0,0.0073,0.0002,1.1965,3.2937,True,True
+C_funding_structure,Deposit-funded,Borrowing-funded,HNB+COMB+SAMP+LFIN,LOFC+CFIN,-1.9451,1.5019,-3.447,0.0056,1014,0.0173,0,0.0262,0.0035,1.1965,3.2937,True,True
+D_pure_nbfi,Banks,Finance(NBFI),HNB+COMB+SAMP,LOFC+CFIN,-2.3047,1.5019,-3.8066,0.0025,845,0.0211,0,0.0145,0.0005,1.1965,3.2937,True,True

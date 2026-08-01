@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""
+Build results_master_log.xlsx — one master, tidy table for EVERY test in this project,
+across all test types (forecasting, event study, regression, correlation, baseline),
+and extensible to any future test. Re-run to regenerate; add rows to ROWS to log a new test.
+"""
+from pathlib import Path
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "results_master_log.xlsx"
+
+COLS = ["ID", "Date", "Category", "Test / Experiment", "Dataset", "Freq", "Split / Setup",
+        "Model / Method", "Protocol", "Metric", "Value", "Baseline value",
+        "Beats baseline?", "Verdict / Key finding", "Output files", "Notes"]
+
+# Each row: values in COLS order (ID auto-filled). "" where n/a.
+R = [
+ # ---- PHASE 1: price forecasting, S&P SL 20 (daily) ----
+ ["2026-07-22","Price forecast","Exp1 one-step","S&P SL20","daily","80/20","ARIMA(1,1,4)","one-step","MAPE %",0.77,0.79,"Tie","Rides persistence; ties naive","results/predictions/arima_info.json","01_arima.py"],
+ ["2026-07-22","Price forecast","Exp1 one-step","S&P SL20","daily","80/20","LSTM","one-step","MAPE %",2.49,0.79,"No","Lags the price","lstm_info.json","02_lstm.py"],
+ ["2026-07-22","Price forecast","Exp1 one-step","S&P SL20","daily","80/20","Hybrid","one-step","MAPE %",0.77,0.79,"Tie","Best but marginal over ARIMA","hybrid_info.json","03_hybrid.py"],
+ ["2026-07-23","Price forecast","Exp2 multi-step","S&P SL20","daily","80/20 whole-window","ARIMA","multi-step (recursive)","MAPE %",33.32,33.23,"No","Flat line; misses trend","ms_arima_info.json","05"],
+ ["2026-07-23","Price forecast","Exp2 multi-step","S&P SL20","daily","80/20 whole-window","LSTM","multi-step (recursive)","MAPE %",35.93,33.23,"No","Worst multi-step","ms_lstm_info.json","06"],
+ ["2026-07-23","Price forecast","Exp2 multi-step","S&P SL20","daily","80/20 whole-window","Naive","multi-step (flat)","MAPE %",33.23,33.23,"—","Best multi-step (nothing beats it)","naive_baseline_info.json",""],
+ ["2026-07-27","Price forecast","Exp3","S&P SL20","daily","80/20","XGBoost","one-step / multi",1.01,"",0.79,"No","1s decent; ms worst (38.8%), trees can't extrapolate","xgb_info.json","09"],
+ ["2026-07-27","Price forecast","Exp3","S&P SL20","daily","80/20","GRU (3 seeds)","one-step / multi","MAPE % 1s",2.58,0.79,"No","≈ LSTM; ms 34.1%","gru_info.json","10"],
+ ["2026-07-24","Price forecast","Split test","S&P SL20","daily","50/50 whole-window","ARIMA vs LSTM","multi-step","MAPE % (A/L)","30.11 / 30.06",30.50,"No","Tie; LSTM 'win' was seed noise","split5050_comparison.csv","14"],
+ ["2026-07-24","Price forecast","Split test","S&P SL20","daily","40/60 whole-window","ARIMA vs LSTM","multi-step","MAPE % (A/L)","24.42 / 19.97",24.42,"No","LSTM robustly beats ARIMA ms (positioning, not skill)","split4060_comparison.csv","15"],
+ ["2026-07-24","Price forecast","Paper replication","S&P SL20","daily","train2015-16 / test2017-18","ARIMA/LSTM/Hybrid","multi-step","MAPE %","6.6-6.8","~7 (paper)","Tie","Reproduces paper on calm window","(scratch check)",""],
+ ["2026-07-26","Price forecast","Transformer benchmark","S&P SL20","daily","80/20/50/50/40/60","Informer/Autoformer/PatchTST/TFT","A whole / B 60-day","MAPE % (B best)","6.9-14","~6.3 (ARIMA)","No","No transformer beats ARIMA/naive (univariate)","master_transformer_vs_classical.csv","16-18"],
+ ["2026-07-25","Price forecast","Forward test","S&P SL20","daily","train<=2026-04-09 / new data","ARIMA/LSTM/Hybrid","one-step / multi","MAPE % 1s",0.49,0.50,"Tie","Fresh out-of-sample; naive best multi-step; ~55pt source offset","forward2026_comparison.csv","13"],
+ ["2026-07-28","Method study","Recursive vs Direct vs Multi","HNB","hourly","80/20 walk-forward","LSTM (3 methods)","fixed horizons 1/5/25/110","MAPE % @1mo (Rec/Dir)","29.3 / 13.6","5.0 (naive)","No","Direct halves recursive error at long horizon; naive still best","multistep_methods.csv","22"],
+ # ---- HNB single-stock ----
+ ["2026-07-26","Price forecast","HNB EOD test","HNB","daily (88 pts)","80/20","ARIMA/LSTM/Hybrid","one-step / multi","MAPE % 1s",0.31,0.31,"Tie","ARIMA=(0,1,0)=random walk=naive; LSTM worst (too little data)","hnb_eod_comparison.csv","20"],
+ ["2026-07-29","Price forecast","HNB hourly test","HNB","hourly (7528)","80/20","ARIMA/LSTM/Hybrid","one-step / multi","MAPE % 1s",0.33,0.33,"Tie","Same lessons at hourly; more data didn't fix LSTM one-step","hnb_hourly_comparison.csv","21"],
+ # ---- Baselines ----
+ ["2026-07-29","Baseline","Prophet baseline","10 CSE stocks","daily","85/15 + MLflow","Prophet","level + direction","MAE ratio vs naive","6-87x worse","naive","No","Fails price (6-87x worse) & direction (loses to majority on 9/10)","prophet_summary_all10.csv","prophet_mlflow_all.py"],
+ # ---- Hypothesis / statistical tests ----
+ ["2026-07-29","Correlation","Group correlation","7 CSE stocks","daily returns","full-sample (2901 days)","Pearson corr","—","Banks-vs-Finance corr",0.251,"within 0.51/0.46","—","Banks & finance are SEPARATE clusters -> hypothesis worth pursuing","group_correlation_matrix.csv","group_correlation_test.py"],
+ ["2026-07-30","Event study","Policy-rate sign-flip pilot","8 CSE stocks + ASPI","daily->event","9 hike events, CAR windows","Abnormal CAR + t/MW","event study","interaction p","n.s.","—","Null","NULL — banks & finance move SAME way on hikes; too few events","results/pilot/pilot_summary.md","pilot_policy_rate_signflip.py"],
+ ["2026-07-30","Regression","Spread regression","8 CSE stocks + rates","monthly (173)","full-sample + interaction","OLS panel (cluster SE)","d_spread x is_bank","interaction p",0.0002,"—","Refuted (real but opposite)","Sig interaction BUT sign OPPOSITE hypothesis: banks -, finance +","spread_regression_summary.md","spread_regression_test.py"],
+ ["2026-07-30","Regression","Spread grouping check","9 CSE stocks + rates","monthly (173)","4 specifications","OLS panel","d_spread x is_g1 (spec B)","interaction p",0.0021,"—","Survives","Effect survives dropping LOLC conglomerate; banks-negative is robust core","grouping_check_summary.md","spread_grouping_check.py"],
+]
+
+# ---- write workbook ----
+wb = openpyxl.Workbook()
+ws = wb.active; ws.title = "Results log"
+hdr_fill = PatternFill("solid", fgColor="1F3864"); hdr_font = Font(bold=True, color="FFFFFF")
+thin = Side(style="thin", color="D0D0D0"); border = Border(left=thin, right=thin, top=thin, bottom=thin)
+ws.append(COLS)
+for c in range(1, len(COLS) + 1):
+    cell = ws.cell(1, c); cell.fill = hdr_fill; cell.font = hdr_font
+    cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+verdict_fill = {"Yes": "C6EFCE", "No": "FFC7CE", "Tie": "FFEB9C", "—": "F2F2F2"}
+for i, row in enumerate(R, start=1):
+    ws.append([i] + row)
+    r = i + 1
+    beats = str(ws.cell(r, 13).value)
+    if beats in verdict_fill:
+        ws.cell(r, 13).fill = PatternFill("solid", fgColor=verdict_fill[beats])
+    ws.cell(r, 13).alignment = Alignment(horizontal="center")
+    ws.cell(r, 14).alignment = Alignment(wrap_text=True, vertical="top")
+    for c in range(1, len(COLS) + 1):
+        ws.cell(r, c).border = border
+widths = [4,11,14,22,16,10,20,22,20,16,10,12,13,42,26,14]
+for c, w in enumerate(widths, start=1):
+    ws.column_dimensions[openpyxl.utils.get_column_letter(c)].width = w
+ws.freeze_panes = "A2"
+ws.auto_filter.ref = f"A1:{openpyxl.utils.get_column_letter(len(COLS))}{len(R)+1}"
+
+# ---- README sheet ----
+rm = wb.create_sheet("README")
+readme = [
+ ["RESULTS MASTER LOG — how to use", ""],
+ ["", ""],
+ ["Purpose", "One tidy row per reported test result, across ALL test types (forecasting, regression, event study, correlation, baseline). Filter/sort by any column."],
+ ["", ""],
+ ["Column", "Meaning"],
+ ["ID", "Sequential row number"],
+ ["Date", "When the test was run (approx.)"],
+ ["Category", "Price forecast / Baseline / Correlation / Event study / Regression / Method study / (new types allowed)"],
+ ["Test / Experiment", "Short test name"],
+ ["Dataset", "What data (S&P SL20, HNB, 10 CSE stocks, ...)"],
+ ["Freq", "daily / hourly / monthly / event"],
+ ["Split / Setup", "80/20, 50/50, 40/60, walk-forward, full-sample, event-study, n specifications, ..."],
+ ["Model / Method", "ARIMA, LSTM, Hybrid, Prophet, XGBoost, GRU, TFT, OLS, event-study, ..."],
+ ["Protocol", "one-step / multi-step / recursive / direct / n/a"],
+ ["Metric", "Name of the reported number (MAPE %, accuracy, interaction p, CAR, correlation, ...)"],
+ ["Value", "The metric value"],
+ ["Baseline value", "The naive / comparison value (leave '—' if not applicable)"],
+ ["Beats baseline?", "Yes / No / Tie / —  (drives the colour)"],
+ ["Verdict / Key finding", "One-line human takeaway"],
+ ["Output files", "Where the detailed results live"],
+ ["Notes", "Anything else (caveats, script name)"],
+ ["", ""],
+ ["RULE", "Update this log after EVERY test run (this chat or Claude Code): add a new row to ROWS in src/build_results_log.py and re-run it, OR append a row directly in Excel. Never leave a completed test unlogged."],
+ ["To regenerate", "python src/build_results_log.py"],
+]
+for row in readme:
+    rm.append(row)
+rm.cell(1, 1).font = Font(bold=True, size=14)
+rm.cell(5, 1).font = Font(bold=True); rm.cell(5, 2).font = Font(bold=True)
+for r in range(6, 21):
+    rm.cell(r, 1).font = Font(bold=True)
+rm.cell(23, 1).font = Font(bold=True, color="C00000")
+rm.column_dimensions["A"].width = 22; rm.column_dimensions["B"].width = 95
+for r in range(1, len(readme) + 1):
+    rm.cell(r, 2).alignment = Alignment(wrap_text=True, vertical="top")
+
+wb.save(OUT)
+print(f"Saved {OUT}  ({len(R)} results, {len(COLS)} columns)")
