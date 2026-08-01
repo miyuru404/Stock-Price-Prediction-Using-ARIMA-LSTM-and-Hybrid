@@ -1,0 +1,3 @@
+group,n,coint(Johansen 95%),trace_stat,trace_crit95,longrun_spread_effect,adjust_speed_alpha,alpha_sig,granger_spread->y_p
+Banks,171,False,12.255,15.4943,-0.3049,0.0068,False,0.0821
+Finance,171,True,29.9001,15.4943,0.1143,0.014,False,0.4735

@@ -42,6 +42,8 @@ R = [
  ["2026-07-30","Event study","Policy-rate sign-flip pilot","8 CSE stocks + ASPI","daily->event","9 hike events, CAR windows","Abnormal CAR + t/MW","event study","interaction p","n.s.","—","Null","NULL — banks & finance move SAME way on hikes; too few events","results/pilot/pilot_summary.md","pilot_policy_rate_signflip.py"],
  ["2026-07-30","Regression","Spread regression","8 CSE stocks + rates","monthly (173)","full-sample + interaction","OLS panel (cluster SE)","d_spread x is_bank","interaction p",0.0002,"—","Refuted (real but opposite)","Sig interaction BUT sign OPPOSITE hypothesis: banks -, finance +","spread_regression_summary.md","spread_regression_test.py"],
  ["2026-07-30","Regression","Spread grouping check","9 CSE stocks + rates","monthly (173)","4 specifications","OLS panel","d_spread x is_g1 (spec B)","interaction p",0.0021,"—","Survives","Effect survives dropping LOLC conglomerate; banks-negative is robust core","grouping_check_summary.md","spread_grouping_check.py"],
+ ["2026-07-31","Regression","ARDL/VECM spread test","9 CSE stocks + rates","monthly (171)","ARDL bounds + VECM","ARDL/VECM","long-run vs short-run","ARDL bounds F (banks)",0.66,"—","No","No long-run link (spread is I(0)); effect is short-run only; banks -, finance + but weak long-run","ardl_vecm_summary.md","spread_ardl_vecm.py"],
+ ["2026-07-31","Direction","Direction Step 1 baseline","HNB","daily","80/20 chrono","XGBoost","next-day Buy/Sell/Hold","Accuracy %",36.2,43.1,"No","Price+technical only: no edge, loses to persistence (43%). Honest baseline to beat.","step1_summary.md","direction_step1_baseline.py"],
 ]
 
 # ---- write workbook ----
