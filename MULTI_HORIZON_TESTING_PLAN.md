@@ -45,6 +45,18 @@
   never levels.** Applies to every future phase.
 - Even in change form, macro still beats the baseline at **0/9** horizons. Rates explain bank
   returns *contemporaneously* (the earlier spread work) but do **not forecast** them.
+- **Phase D done (2026-08-01):** + sector (ASPI returns/vol, relative strength vs ASPI and vs peer
+  banks, peer-bank & finance composites, 60d corr and beta). Built **on C2**, not C.
+  **Mean gain +2.6 pp — the first consistently positive step (6/9 horizons).** Still **0/9** beat
+  the baseline, but short horizons are now near-parity: **1 week −0.2 pp**, 1 day −1.7, 2 weeks −1.6.
+- **Two soft signals worth re-testing (NOT findings yet):**
+  1. Phase D **return sign edge is positive at 1, 2 and 3 weeks** (+1.7 / +1.7 / +1.1 pp) — first
+     positive sign edges in the study, and at three adjacent horizons.
+  2. Importance splits by horizon: **sector dominates short** (42% at 1 day), **macro dominates
+     long** (49% at 1 year). Mirror images.
+  Both are from one stock and one split. **Confirm on other tickers before claiming anything.**
+- **Ranking of what helps (HNB, direction):** sector +2.6 > macro Δ +3.4 vs C but 0 vs A/B >
+  Tier-2 −0.9 > macro levels −2.8. Nothing crosses the baseline.
 
 ---
 
@@ -161,7 +173,8 @@ naive "no change" (return).
 | Return % target alongside direction | ✅ done — RMSE ≈ train-mean drift; sign edge 0/9 (real) |
 | Phase B ablation (+Tier-2: RSI, MACD, volume) | ✅ done — **gain −1.1 pp, 0/9 beat baseline** |
 | Phase C ablation (+macro rates) | ✅ done — **gain −2.8 pp, 0/9 beat baseline** |
-| Phase D ablation (+sector: ASPI, peers) | ⏳ NEXT |
+| Phase D ablation (+sector: ASPI, peers) | ✅ done — **gain +2.6 pp (first positive), still 0/9** |
+| Sector-aware run: repeat Phase D on banks/finance/control | ⏳ NEXT |
 | Step-by-step indicator ablation (Tier 4: events, sentiment) | ⏳ to do |
 | Collect macro (inflation/FX/M2), dividends, sentiment | ⏳ to do |
 | Sector-aware run (banks/finance/control) | ⏳ to do |

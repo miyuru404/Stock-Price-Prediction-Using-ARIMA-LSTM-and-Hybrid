@@ -120,14 +120,60 @@ macro_daily = pd.merge_asof(
 for m in MACRO:
     feat[m] = macro_daily[m].values
 
+# ---- TIER 3b: SECTOR (market index + peer stocks) ----
+# All of these are known at the close of day t, and the label starts at day t -> no look-ahead.
+# Everything is a return, ratio, correlation or beta, i.e. already stationary (the Phase C2 lesson:
+# never feed a trending level).
+PEER_BANKS = ["COMB", "SAMP"]                       # HNB's own sector
+PEER_FINANCE = ["LOFC", "LOLC", "LFIN", "CFIN"]     # the neighbouring cluster
+
+
+def load_close(tic):
+    x = (pd.read_csv(DATA / f"{tic}_daily_clean.csv", parse_dates=["date"])
+           .sort_values("date").drop_duplicates("date").set_index("date")["close"].astype(float))
+    return x.reindex(d["date"]).ffill().values     # align to HNB's calendar; ffill = past only
+
+
+aspi = pd.Series(load_close("ASPI"))
+aspi_ret1 = aspi.pct_change()
+bank_px = pd.DataFrame({t: load_close(t) for t in PEER_BANKS})
+fin_px = pd.DataFrame({t: load_close(t) for t in PEER_FINANCE})
+bank_ret1 = bank_px.pct_change().mean(axis=1)      # equal-weight peer-bank composite
+fin_ret1 = fin_px.pct_change().mean(axis=1)
+
+feat["aspi_ret_1"] = aspi_ret1
+feat["aspi_ret_5"] = aspi.pct_change(5)
+feat["aspi_ret_10"] = aspi.pct_change(10)
+feat["aspi_ma20_ratio"] = aspi / aspi.rolling(20).mean() - 1
+feat["aspi_vol_20"] = aspi_ret1.rolling(20).std()
+# relative strength: is HNB leading or lagging the market / its own sector?
+feat["rs_vs_aspi_1"] = ret1 - aspi_ret1
+feat["rs_vs_aspi_5"] = c.pct_change(5) - aspi.pct_change(5)
+feat["rs_vs_aspi_20"] = c.pct_change(20) - aspi.pct_change(20)
+feat["peer_bank_ret_1"] = bank_ret1
+feat["peer_bank_ret_5"] = bank_px.pct_change(5).mean(axis=1)
+feat["rs_vs_banks_5"] = c.pct_change(5) - bank_px.pct_change(5).mean(axis=1)
+feat["peer_fin_ret_1"] = fin_ret1
+feat["peer_fin_ret_5"] = fin_px.pct_change(5).mean(axis=1)
+feat["bank_minus_fin_5"] = bank_px.pct_change(5).mean(axis=1) - fin_px.pct_change(5).mean(axis=1)
+# regime: how tightly is HNB tied to the market right now?
+feat["corr_aspi_60"] = ret1.rolling(60).corr(aspi_ret1)
+feat["beta_aspi_60"] = (ret1.rolling(60).cov(aspi_ret1) / aspi_ret1.rolling(60).var())
+SECTOR = [x for x in feat.columns if x not in TIER1 + TIER2 + MACRO]
+
+# NOTE: the plan lists "spread x is_bank" for this phase. On a single stock `is_bank` is a
+# constant, so the interaction collapses to the spread itself (already in Phase C). The
+# meaningful single-stock version of "sector" is the market index + peer stocks used above.
+
 PHASES = {
     "A (Tier-1)": TIER1,
     "B (+Tier-2)": TIER1 + TIER2,
     "C (+macro)": TIER1 + TIER2 + MACRO,
     "C2 (+macro Δ only)": TIER1 + TIER2 + MACRO_CHANGES,
+    "D (+sector)": TIER1 + TIER2 + MACRO_CHANGES + SECTOR,   # builds on C2, not C
 }
 PHASE_KEYS = list(PHASES)
-ALL_FEATURES = TIER1 + TIER2 + MACRO
+ALL_FEATURES = TIER1 + TIER2 + MACRO + SECTOR
 
 
 def deadzone(h):
@@ -253,8 +299,10 @@ for h in HORIZONS:
             "tier1_share_%": round(s[[x for x in cols if x in TIER1]].sum() * 100, 1),
             "tier2_share_%": round(s[[x for x in cols if x in TIER2]].sum() * 100, 1),
             "macro_share_%": round(s[[x for x in cols if x in MACRO]].sum() * 100, 1),
+            "sector_share_%": round(s[[x for x in cols if x in SECTOR]].sum() * 100, 1),
             "top_feature": s.idxmax(),
-            "top_feature_tier": ("macro" if s.idxmax() in MACRO else
+            "top_feature_tier": ("sector" if s.idxmax() in SECTOR else
+                                 "macro" if s.idxmax() in MACRO else
                                  "tier2" if s.idxmax() in TIER2 else "tier1"),
         })
 
@@ -262,8 +310,8 @@ for h in HORIZONS:
            for p in PHASE_KEYS}
     print(f"h={h:>3}d  base {row[PHASE_KEYS[0]]['best_baseline_%']:5.1f}% | "
           + "  ".join(f"{p.split()[0]} {row[p]['best_model_%']:5.1f}%" for p in PHASE_KEYS)
-          + f" | B->C {row[PHASE_KEYS[2]]['best_model_%'] - row[PHASE_KEYS[1]]['best_model_%']:+6.1f}"
-          + f"  B->C2 {row[PHASE_KEYS[3]]['best_model_%'] - row[PHASE_KEYS[1]]['best_model_%']:+6.1f} pp")
+          + f" | C2->D {row[PHASE_KEYS[4]]['best_model_%'] - row[PHASE_KEYS[3]]['best_model_%']:+6.1f} pp"
+          + f" | edge D {row[PHASE_KEYS[4]]['edge_pp']:+6.1f}")
 
 DIR = pd.DataFrame(dir_rows)
 RET = pd.DataFrame(ret_rows)
@@ -272,7 +320,7 @@ IMP = pd.DataFrame(imp_rows)
 # ================================================================ gain table
 P = {p: DIR[DIR.phase == p].set_index("horizon_days") for p in PHASE_KEYS}
 Q = {p: RET[RET.phase == p].set_index("horizon_days") for p in PHASE_KEYS}
-A, B, C, C2 = PHASE_KEYS
+A, B, C, C2, D = PHASE_KEYS
 
 GAIN = pd.DataFrame({
     "horizon": P[A]["horizon"],
@@ -280,17 +328,22 @@ GAIN = pd.DataFrame({
     "baseline_%": P[A]["best_baseline_%"],
     "A_best_%": P[A]["best_model_%"], "B_best_%": P[B]["best_model_%"],
     "C_best_%": P[C]["best_model_%"], "C2_best_%": P[C2]["best_model_%"],
+    "D_best_%": P[D]["best_model_%"],
     "gain_A_to_B_pp": (P[B]["best_model_%"] - P[A]["best_model_%"]).round(1),
     "gain_B_to_C_pp": (P[C]["best_model_%"] - P[B]["best_model_%"]).round(1),
     "gain_B_to_C2_pp": (P[C2]["best_model_%"] - P[B]["best_model_%"]).round(1),
+    "gain_C2_to_D_pp": (P[D]["best_model_%"] - P[C2]["best_model_%"]).round(1),
     "A_edge_pp": P[A]["edge_pp"], "B_edge_pp": P[B]["edge_pp"],
-    "C_edge_pp": P[C]["edge_pp"], "C2_edge_pp": P[C2]["edge_pp"],
+    "C_edge_pp": P[C]["edge_pp"], "C2_edge_pp": P[C2]["edge_pp"], "D_edge_pp": P[D]["edge_pp"],
     "C_beats_baseline": P[C]["beats_baseline"], "C2_beats_baseline": P[C2]["beats_baseline"],
+    "D_beats_baseline": P[D]["beats_baseline"],
     "A_ret_ratio": Q[A]["rmse_ratio_ridge_vs_trainmean"],
     "B_ret_ratio": Q[B]["rmse_ratio_ridge_vs_trainmean"],
     "C_ret_ratio": Q[C]["rmse_ratio_ridge_vs_trainmean"],
     "C2_ret_ratio": Q[C2]["rmse_ratio_ridge_vs_trainmean"],
+    "D_ret_ratio": Q[D]["rmse_ratio_ridge_vs_trainmean"],
     "C_sign_edge_pp": Q[C]["dir_edge_pp"], "C2_sign_edge_pp": Q[C2]["dir_edge_pp"],
+    "D_sign_edge_pp": Q[D]["dir_edge_pp"],
 }).reset_index()
 
 DIR.to_csv(OUT / "ablation_direction_table.csv", index=False)
@@ -301,7 +354,7 @@ IMP.to_csv(OUT / "ablation_feature_importance.csv", index=False)
 # ================================================================ plots
 fig, ax = plt.subplots(1, 2, figsize=(13, 5))
 a = ax[0]
-for p, mk in zip(PHASE_KEYS, ["o-", "s-", "D-", "v-"]):
+for p, mk in zip(PHASE_KEYS, ["o-", "s-", "D-", "v-", "*-"]):
     a.plot(GAIN.horizon_days, P[p]["best_model_%"].values, mk, label=f"Phase {p}", lw=2)
 a.plot(GAIN.horizon_days, GAIN["baseline_%"], "^--", color="black", label="best baseline")
 a.set_xscale("log"); a.set_xticks(HORIZONS); a.set_xticklabels(HORIZONS)
@@ -314,6 +367,7 @@ x = np.arange(len(GAIN))
 g.bar(x - 0.26, GAIN["gain_A_to_B_pp"], 0.26, label="A→B  (+Tier-2)", color="steelblue", alpha=.8)
 g.bar(x, GAIN["gain_B_to_C_pp"], 0.26, label="B→C  (+macro, levels+Δ)", color="darkorange", alpha=.85)
 g.bar(x + 0.26, GAIN["gain_B_to_C2_pp"], 0.26, label="B→C2 (+macro Δ only)", color="seagreen", alpha=.85)
+g.bar(x + 0.52, GAIN["gain_C2_to_D_pp"], 0.26, label="C2→D (+sector)", color="crimson", alpha=.85)
 g.axhline(0, color="black", lw=1)
 g.set_xticks(x); g.set_xticklabels(GAIN["horizon"], rotation=45, ha="right")
 g.set_ylabel("Accuracy gain (percentage points)")
@@ -323,7 +377,7 @@ fig.tight_layout(); fig.savefig(OUT / "ablation_gain.png", dpi=140)
 
 fig2, ax2 = plt.subplots(1, 2, figsize=(13, 5))
 e = ax2[0]
-for p, mk in zip(PHASE_KEYS, ["o-", "s-", "D-", "v-"]):
+for p, mk in zip(PHASE_KEYS, ["o-", "s-", "D-", "v-", "*-"]):
     e.plot(GAIN.horizon_days, P[p]["edge_pp"].values, mk, label=f"Phase {p}", lw=2)
 e.axhline(0, color="black", ls="--", label="baseline (must be above)")
 e.set_xscale("log"); e.set_xticks(HORIZONS); e.set_xticklabels(HORIZONS)
@@ -333,11 +387,13 @@ e.grid(alpha=.3); e.legend(fontsize=8)
 
 s = ax2[1]
 impC = IMP[IMP.phase == C].set_index("horizon_days")
-s.stackplot(GAIN.horizon_days, impC["tier1_share_%"], impC["tier2_share_%"], impC["macro_share_%"],
-            labels=["Tier-1 price", "Tier-2 indicators", "Macro rates"], alpha=.8)
+impD = IMP[IMP.phase == D].set_index("horizon_days")
+s.stackplot(GAIN.horizon_days, impD["tier1_share_%"], impD["tier2_share_%"],
+            impD["macro_share_%"], impD["sector_share_%"],
+            labels=["Tier-1 price", "Tier-2 indicators", "Macro Δ", "Sector"], alpha=.8)
 s.set_xscale("log"); s.set_xticks(HORIZONS); s.set_xticklabels(HORIZONS)
 s.set_xlabel("Horizon (trading days, log scale)"); s.set_ylabel("Share of XGBoost importance %")
-s.set_title("Phase C — where the model looks\n(uses macro heavily; still no accuracy)")
+s.set_title("Phase D — where the model looks\n(share of XGBoost importance)")
 s.legend(fontsize=8, loc="lower left")
 fig2.tight_layout(); fig2.savefig(OUT / "ablation_edge.png", dpi=140)
 
@@ -352,8 +408,14 @@ long_bc = GAIN[GAIN.horizon_days >= 22].gain_B_to_C_pp.mean()
 short_bc = GAIN[GAIN.horizon_days < 22].gain_B_to_C_pp.mean()
 swing = GAIN.gain_B_to_C_pp.max() - GAIN.gain_B_to_C_pp.min()
 worst_ratio = GAIN.C_ret_ratio.max()
+mean_c2d = GAIN.gain_C2_to_D_pp.mean()
+pos_c2d = GAIN[GAIN.gain_C2_to_D_pp > 0]
+d_wins = GAIN[GAIN.D_beats_baseline == "Yes"]
+d_best_edge = GAIN.loc[GAIN.D_edge_pp.idxmax()]
+sector_share = impD["sector_share_%"].mean()
+d_ret_worst = GAIN.D_ret_ratio.max()
 
-md = f"""# Phase Ablation — A (Tier-1) → B (+Tier-2) → C (+macro rates) → C2 (macro Δ only)
+md = f"""# Phase Ablation — A (Tier-1) → B (+Tier-2) → C / C2 (macro) → D (+sector)
 
 **Stock:** {TICKER} daily · **Horizons:** {HORIZONS} trading days · **Method:** DIRECT (model per horizon)
 
@@ -363,6 +425,11 @@ md = f"""# Phase Ablation — A (Tier-1) → B (+Tier-2) → C (+macro rates) �
 | B | {len(TIER1) + len(TIER2)} | + Tier-2 technical: {', '.join(TIER2)} |
 | C | {len(ALL_FEATURES)} | + macro rates, levels **and** changes: {', '.join(MACRO)} |
 | C2 | {len(TIER1) + len(TIER2) + len(MACRO_CHANGES)} | + macro **changes only** (levels dropped): {', '.join(MACRO_CHANGES)} |
+| D | {len(TIER1) + len(TIER2) + len(MACRO_CHANGES) + len(SECTOR)} | **C2** + sector: ASPI market returns/vol, relative strength vs ASPI and vs peer banks, peer-bank and finance composites, 60d correlation and beta |
+
+**Phase D builds on C2, not C** — C's rate levels were shown to be actively harmful, so carrying
+them forward would contaminate the sector test. Peers used: banks {PEER_BANKS}, finance {PEER_FINANCE}.
+All sector features are same-day-known returns/ratios (no look-ahead) and already stationary.
 
 C2 is a diagnostic, not a new tier: it answers "is macro useless, or was it fed in the wrong form?"
 Rate *levels* trend and never repeat across regimes, so a tree can memorise "rates were 15% in
@@ -388,11 +455,16 @@ published. Inflation, FX and M2 are still on the COLLECT list — **Phase C here
   classic fingerprint of a model latching onto a trending variable.
 - **The C2 diagnostic settles it: {mean_bc2:+.1f} pp using macro CHANGES only.**
   {'Dropping the trending levels fixes the damage, so the problem was the FORM of the data, not macro itself.' if mean_bc2 > mean_bc + 1 else 'Even in stationary change form, macro adds nothing — so it is the information, not the form.'}
-- Verdict: {'Macro rates give a real lift. Follow this thread.' if len(c_wins) > 0 and mean_bc > 1 else 'Interest-rate data does NOT predict HNB direction at any horizon. Four feature sets, up to 22 features, 1 day to 1 year: still no edge anywhere.'}
+- **Sector gain (C2→D): {mean_c2d:+.1f} pp.** Positive at {len(pos_c2d)} of {len(GAIN)} horizons —
+  the **first step in the whole study with a positive average gain**.
+- **But it still beats the baseline at {len(d_wins)} of {len(GAIN)} horizons.** Closest is
+  **{d_best_edge.horizon}** at {d_best_edge.D_edge_pp:+.1f} pp — near-parity, not a win.
+- XGBoost gives sector features **{sector_share:.0f}%** of its importance.
+- Verdict: {'Sector context gives a real edge. Follow this thread.' if len(d_wins) > 0 else 'Sector context is the most useful thing added so far — it repairs the macro damage and pulls short-horizon models to within ~2 pp of the baseline — but it still never crosses it. Five feature sets, up to 38 features, 1 day to 1 year: no horizon beats the naive guess.'}
 
 ## The gain table (the finding)
 
-{md_table(GAIN[['horizon', 'baseline_%', 'A_best_%', 'B_best_%', 'C_best_%', 'C2_best_%', 'gain_A_to_B_pp', 'gain_B_to_C_pp', 'gain_B_to_C2_pp', 'C_edge_pp', 'C2_edge_pp', 'C2_beats_baseline']])}
+{md_table(GAIN[['horizon', 'baseline_%', 'A_best_%', 'B_best_%', 'C_best_%', 'C2_best_%', 'D_best_%', 'gain_A_to_B_pp', 'gain_B_to_C_pp', 'gain_B_to_C2_pp', 'gain_C2_to_D_pp', 'D_edge_pp', 'D_beats_baseline']])}
 
 `gain` = best model of that phase − best model of the previous phase.
 `edge_pp` = model − best baseline. **Edge is what counts; gain only matters if it lifts edge above 0.**
@@ -403,14 +475,24 @@ published. Inflation, FX and M2 are still on the COLLECT list — **Phase C here
 
 ## Return % — did macro help there?
 
-{md_table(GAIN[['horizon', 'A_ret_ratio', 'B_ret_ratio', 'C_ret_ratio', 'C2_ret_ratio', 'C_sign_edge_pp', 'C2_sign_edge_pp']])}
+{md_table(GAIN[['horizon', 'A_ret_ratio', 'B_ret_ratio', 'C_ret_ratio', 'C2_ret_ratio', 'D_ret_ratio', 'C2_sign_edge_pp', 'D_sign_edge_pp']])}
+
+Phase D return RMSE peaks at **{d_ret_worst:.2f}×** the train-mean null. Sector features repair
+much of the macro damage on the return target too, but never get below the ~0.99 that plain
+Tier-1 already achieved.
 
 `ret_ratio` = model RMSE ÷ train-mean-drift RMSE. **Below 1.0 = features helped.**
 `C_sign_edge_pp` = sign accuracy − "always guess the winning side". **Above 0 = real.**
 
-## Where the model looks in Phase C
+## Where the model looks
+
+Phase C (macro levels included):
 
 {md_table(IMP[IMP.phase == C][['horizon', 'tier1_share_%', 'tier2_share_%', 'macro_share_%', 'top_feature', 'top_feature_tier']])}
+
+Phase D (macro Δ + sector):
+
+{md_table(IMP[IMP.phase == D][['horizon', 'tier1_share_%', 'tier2_share_%', 'macro_share_%', 'sector_share_%', 'top_feature', 'top_feature_tier']])}
 
 This is the key diagnostic: macro importance climbs from {impC['macro_share_%'].iloc[0]:.0f}% at
 1 day to {impC['macro_share_%'].iloc[-1]:.0f}% at 1 year while accuracy *falls*. The model is
@@ -429,26 +511,31 @@ fitting the rate series as a slow-moving trend proxy, not using it as signal.
   one — this run confirms it does not forecast.
 
 ## Next
-Phase D — sector (ASPI market return, spread × is_bank, peer-bank returns) across banks / finance /
-control, not just HNB. Then E (events) and F (news sentiment), which are the last untested sources
-of information outside the price chart.
+1. **Sector-aware run across tickers** — repeat Phase D on COMB/SAMP (banks), LOFC/LOLC/LFIN/CFIN
+   (finance) and JKH/DIAL/CTC/DIST (control). HNB alone cannot tell us whether the sector gain is
+   general or one stock's luck. This is the cheapest remaining test and it uses data already held.
+2. **Phase E (events)** — dividend dates and rate-decision flags. Rate events are in
+   `cleaned_data/policy_rate_events.csv`; dividends still to collect.
+3. **Phase F (news sentiment)** — the last untested source. Needs scraping + FinBERT.
 """
 (OUT / "ablation_summary.md").write_text(md)
 
 print("\n" + "=" * 104)
-print(GAIN[["horizon", "baseline_%", "A_best_%", "B_best_%", "C_best_%", "C2_best_%",
-            "gain_B_to_C_pp", "gain_B_to_C2_pp", "C_edge_pp", "C2_edge_pp",
-            "C2_beats_baseline"]].to_string(index=False))
+print(GAIN[["horizon", "baseline_%", "A_best_%", "B_best_%", "C_best_%", "C2_best_%", "D_best_%",
+            "gain_B_to_C2_pp", "gain_C2_to_D_pp", "D_edge_pp",
+            "D_beats_baseline"]].to_string(index=False))
 print("=" * 104)
 print(GAIN[["horizon", "A_ret_ratio", "B_ret_ratio", "C_ret_ratio", "C2_ret_ratio",
-            "C_sign_edge_pp", "C2_sign_edge_pp"]].to_string(index=False))
+            "D_ret_ratio", "C2_sign_edge_pp", "D_sign_edge_pp"]].to_string(index=False))
 print("=" * 104)
-print(IMP[IMP.phase == C][["horizon", "tier1_share_%", "tier2_share_%", "macro_share_%",
-                           "top_feature", "top_feature_tier"]].to_string(index=False))
+print(IMP[IMP.phase == D][["horizon", "tier1_share_%", "tier2_share_%", "macro_share_%",
+                           "sector_share_%", "top_feature", "top_feature_tier"]].to_string(index=False))
 print(f"\nMean gain A->B (Tier-2): {mean_ab:+.1f} pp")
 print(f"Mean gain B->C (macro) : {mean_bc:+.1f} pp   (positive at {len(pos_bc)}/{len(GAIN)} horizons)")
 print(f"Mean gain B->C2 (macro d): {mean_bc2:+.1f} pp   (positive at {len(pos_bc2)}/{len(GAIN)} horizons)")
 print(f"   long horizons >=1mo : {long_bc:+.1f} pp | short horizons: {short_bc:+.1f} pp")
-print(f"Phase C beats baseline : {len(c_wins)}/{len(GAIN)} horizons | Phase C2: {len(c2_wins)}/{len(GAIN)}")
+print(f"Mean gain C2->D (sector) : {mean_c2d:+.1f} pp   (positive at {len(pos_c2d)}/{len(GAIN)} horizons)")
+print(f"Phase C beats baseline : {len(c_wins)}/{len(GAIN)} | C2: {len(c2_wins)}/{len(GAIN)} | D: {len(d_wins)}/{len(GAIN)}")
+print(f"Sector share of XGB importance: {sector_share:.0f}%")
 print(f"Macro share of XGB importance: {macro_share:.0f}%")
 print(f"Saved to {OUT}")

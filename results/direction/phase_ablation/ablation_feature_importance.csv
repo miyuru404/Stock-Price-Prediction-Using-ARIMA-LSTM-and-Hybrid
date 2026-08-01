@@ -1,37 +1,46 @@
-horizon_days,horizon,phase,tier1_share_%,tier2_share_%,macro_share_%,top_feature,top_feature_tier
-1,1 day,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-1,1 day,B (+Tier-2),61.2,38.8,0.0,vol_20,tier1
-1,1 day,C (+macro),33.3,20.9,45.8,vol_20,tier1
-1,1 day,C2 (+macro Δ only),41.9,26.8,31.3,vol_20,tier1
-5,1 week,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-5,1 week,B (+Tier-2),60.2,39.8,0.0,vol_20,tier1
-5,1 week,C (+macro),27.9,18.6,53.5,spread,macro
-5,1 week,C2 (+macro Δ only),37.5,24.6,37.9,term_slope,macro
-10,2 weeks,A (Tier-1),100.0,0.0,0.0,vol_10,tier1
-10,2 weeks,B (+Tier-2),58.8,41.2,0.0,macd_signal,tier2
-10,2 weeks,C (+macro),24.5,17.4,58.2,tb_12m,macro
-10,2 weeks,C2 (+macro Δ only),32.8,24.1,43.0,term_slope,macro
-15,3 weeks,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-15,3 weeks,B (+Tier-2),58.7,41.3,0.0,macd_signal,tier2
-15,3 weeks,C (+macro),23.4,16.9,59.6,d_tb3m_3m,macro
-15,3 weeks,C2 (+macro Δ only),30.9,23.4,45.7,d_policy_1m,macro
-22,1 month,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-22,1 month,B (+Tier-2),57.8,42.2,0.0,vol_20,tier1
-22,1 month,C (+macro),20.7,15.6,63.7,d_tb3m_3m,macro
-22,1 month,C2 (+macro Δ only),29.0,22.6,48.4,d_tb3m_3m,macro
-44,2 months,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-44,2 months,B (+Tier-2),58.7,41.3,0.0,macd_signal,tier2
-44,2 months,C (+macro),18.8,13.8,67.4,spread,macro
-44,2 months,C2 (+macro Δ only),28.8,20.5,50.7,d_tb3m_3m,macro
-66,3 months,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-66,3 months,B (+Tier-2),58.4,41.6,0.0,macd_signal,tier2
-66,3 months,C (+macro),16.7,11.2,72.0,tb_12m,macro
-66,3 months,C2 (+macro Δ only),24.9,19.6,55.4,d_tb3m_1m,macro
-132,6 months,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-132,6 months,B (+Tier-2),57.3,42.7,0.0,macd_signal,tier2
-132,6 months,C (+macro),11.9,10.2,77.9,tb_12m,macro
-132,6 months,C2 (+macro Δ only),22.4,19.5,58.1,d_tb3m_1m,macro
-252,1 year,A (Tier-1),100.0,0.0,0.0,vol_20,tier1
-252,1 year,B (+Tier-2),56.0,44.0,0.0,macd_signal,tier2
-252,1 year,C (+macro),11.8,8.4,79.7,policy_rate,macro
-252,1 year,C2 (+macro Δ only),21.1,15.7,63.2,d_tb3m_1m,macro
+horizon_days,horizon,phase,tier1_share_%,tier2_share_%,macro_share_%,sector_share_%,top_feature,top_feature_tier
+1,1 day,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+1,1 day,B (+Tier-2),61.2,38.8,0.0,0.0,vol_20,tier1
+1,1 day,C (+macro),33.3,20.9,45.8,0.0,vol_20,tier1
+1,1 day,C2 (+macro Δ only),41.9,26.8,31.3,0.0,vol_20,tier1
+1,1 day,D (+sector),24.7,15.3,18.4,41.6,vol_20,tier1
+5,1 week,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+5,1 week,B (+Tier-2),60.2,39.8,0.0,0.0,vol_20,tier1
+5,1 week,C (+macro),27.9,18.6,53.5,0.0,spread,macro
+5,1 week,C2 (+macro Δ only),37.5,24.6,37.9,0.0,term_slope,macro
+5,1 week,D (+sector),22.9,15.0,22.1,40.0,vol_20,tier1
+10,2 weeks,A (Tier-1),100.0,0.0,0.0,0.0,vol_10,tier1
+10,2 weeks,B (+Tier-2),58.8,41.2,0.0,0.0,macd_signal,tier2
+10,2 weeks,C (+macro),24.5,17.4,58.2,0.0,tb_12m,macro
+10,2 weeks,C2 (+macro Δ only),32.8,24.1,43.0,0.0,term_slope,macro
+10,2 weeks,D (+sector),20.4,15.2,27.3,37.1,term_slope,macro
+15,3 weeks,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+15,3 weeks,B (+Tier-2),58.7,41.3,0.0,0.0,macd_signal,tier2
+15,3 weeks,C (+macro),23.4,16.9,59.6,0.0,d_tb3m_3m,macro
+15,3 weeks,C2 (+macro Δ only),30.9,23.4,45.7,0.0,d_policy_1m,macro
+15,3 weeks,D (+sector),19.8,15.4,30.2,34.6,d_tb3m_3m,macro
+22,1 month,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+22,1 month,B (+Tier-2),57.8,42.2,0.0,0.0,vol_20,tier1
+22,1 month,C (+macro),20.7,15.6,63.7,0.0,d_tb3m_3m,macro
+22,1 month,C2 (+macro Δ only),29.0,22.6,48.4,0.0,d_tb3m_3m,macro
+22,1 month,D (+sector),19.4,14.8,32.0,33.8,d_tb3m_3m,macro
+44,2 months,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+44,2 months,B (+Tier-2),58.7,41.3,0.0,0.0,macd_signal,tier2
+44,2 months,C (+macro),18.8,13.8,67.4,0.0,spread,macro
+44,2 months,C2 (+macro Δ only),28.8,20.5,50.7,0.0,d_tb3m_3m,macro
+44,2 months,D (+sector),19.1,14.3,34.8,31.8,d_tb3m_3m,macro
+66,3 months,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+66,3 months,B (+Tier-2),58.4,41.6,0.0,0.0,macd_signal,tier2
+66,3 months,C (+macro),16.7,11.2,72.0,0.0,tb_12m,macro
+66,3 months,C2 (+macro Δ only),24.9,19.6,55.4,0.0,d_tb3m_1m,macro
+66,3 months,D (+sector),16.3,13.9,41.2,28.5,d_tb3m_1m,macro
+132,6 months,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+132,6 months,B (+Tier-2),57.3,42.7,0.0,0.0,macd_signal,tier2
+132,6 months,C (+macro),11.9,10.2,77.9,0.0,tb_12m,macro
+132,6 months,C2 (+macro Δ only),22.4,19.5,58.1,0.0,d_tb3m_1m,macro
+132,6 months,D (+sector),15.5,14.6,39.8,30.2,d_tb3m_1m,macro
+252,1 year,A (Tier-1),100.0,0.0,0.0,0.0,vol_20,tier1
+252,1 year,B (+Tier-2),56.0,44.0,0.0,0.0,macd_signal,tier2
+252,1 year,C (+macro),11.8,8.4,79.7,0.0,policy_rate,macro
+252,1 year,C2 (+macro Δ only),21.1,15.7,63.2,0.0,d_tb3m_1m,macro
+252,1 year,D (+sector),13.6,9.8,49.2,27.3,d_policy_1m,macro
