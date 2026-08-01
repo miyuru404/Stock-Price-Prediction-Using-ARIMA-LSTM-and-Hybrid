@@ -1,0 +1,18 @@
+horizon,horizon_days,rule,says,fired_n,correct_%,vs_baseline_pp
+1 day,1,vol_20 <= 0.0123 AND aspi_ret_1 <= 0.0018 AND ret_1 > -0.0102,Hold,692,49.3,11.3
+1 day,1,vol_20 <= 0.0123 AND aspi_ret_1 > 0.0018 AND ma5_ratio <= 0.0122,Hold,457,46.4,8.4
+1 day,1,vol_20 <= 0.0123 AND aspi_ret_1 > 0.0018 AND ma5_ratio > 0.0122,Buy,153,43.1,5.2
+1 day,1,vol_20 > 0.0123 AND ma5_ratio <= -0.0145 AND vol_10 <= 0.0391,Buy,504,41.1,3.1
+1 day,1,vol_20 > 0.0123 AND ma5_ratio > -0.0145 AND peer_ret_1 > 0.0050,Buy,943,40.5,2.5
+1 day,1,vol_20 > 0.0123 AND ma5_ratio > -0.0145 AND peer_ret_1 <= 0.0050,Sell,1526,36.5,-1.5
+1 day,1,vol_20 <= 0.0123 AND aspi_ret_1 <= 0.0018 AND ret_1 <= -0.0102,Buy,150,29.3,-8.6
+1 week,5,vol_20 > 0.0127 AND d_ccpi_yoy_3m <= 5.2350 AND ccpi_yoy_pct <= 9.8700,Buy,2887,40.4,4.3
+1 week,5,vol_20 <= 0.0127 AND aspi_ret_5 > 0.0052 AND d_ccpi_yoy_3m > 2.6300,Buy,123,35.8,-0.3
+1 week,5,vol_20 <= 0.0127 AND aspi_ret_5 <= 0.0052 AND peer_ret_1 > -0.0080,Hold,643,33.7,-2.4
+1 week,5,vol_20 <= 0.0127 AND aspi_ret_5 > 0.0052 AND d_ccpi_yoy_3m <= 2.6300,Hold,591,32.7,-3.5
+1 week,5,vol_20 <= 0.0127 AND aspi_ret_5 <= 0.0052 AND peer_ret_1 <= -0.0080,Hold,194,29.9,-6.2
+1 month,22,vol_10 <= 0.0158 AND d_ccpi_yoy_3m <= -3.2750 AND ccpi_yoy_pct <= 18.6000,Sell,317,68.5,24.4
+1 month,22,vol_10 > 0.0158 AND d_ccpi_yoy_3m <= 5.2350 AND term_slope <= 0.6100,Buy,1421,41.4,-2.6
+1 month,22,vol_10 <= 0.0158 AND d_ccpi_yoy_3m > -3.2750 AND d_tb3m_3m > -0.8250,Hold,1537,25.0,-19.0
+1 month,22,vol_10 <= 0.0158 AND d_ccpi_yoy_3m > -3.2750 AND d_tb3m_3m <= -0.8250,Hold,639,20.8,-23.2
+1 month,22,vol_10 > 0.0158 AND d_ccpi_yoy_3m <= 5.2350 AND term_slope > 0.6100,Hold,496,19.4,-24.7

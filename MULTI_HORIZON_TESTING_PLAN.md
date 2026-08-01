@@ -122,6 +122,30 @@
   to ask *"is there a long-run relationship?"* (in-sample, on levels). This project asks
   *"can you predict the next move?"* (out-of-sample, on direction). Macro **explains**; it does not
   **predict**. That distinction is the intellectual core of the write-up.
+- **Pooled panel + co-movement + rules done (2026-08-02):** → `src/direction_pooled_and_rules.py`,
+  `results/direction/pooled_rules/`. Three tests answering "can the model just learn *if X up then
+  stock up*?"
+  - **Co-movement (no model, pure counting):** market/peer indicators DO carry a real
+    **+6 to +10 pp** lift at 1 day–1 month, on huge samples. Macro lifts are ~0 at short horizons.
+    All the eye-catching macro lifts (T-bill −19.3, M2 +17.0) sit at 3 mo–1 yr where only
+    **7–24 independent windows** exist → artifacts, discard.
+  - **Pooled panel model:** 7 stocks stacked = **17,770 training rows** (vs ~2,700 per stock),
+    split by DATE not row. Beat the pooled baseline at 1 day (+3.3) and 1 week (+2.7).
+  - **⚠ FAIRNESS CHECK CAUGHT AN ARTIFACT:** pooling stocks with different class balances weakens
+    the majority baseline. Re-scored per stock against each stock's OWN baseline:
+    **1 week collapsed to −0.5 pp (3/7 stocks)** — the pooled win was fake.
+    **1 day survived: 6/7 stocks, median +2.5 pp, p = 0.062.**
+  - **That 1-day cell is the strongest result in the whole project — and still not significant.**
+    One horizon out of nine, one window, p just above 0.05. **Do not claim it.** Re-test it on a
+    different window before it is allowed to become a finding.
+  - **Readable rules:** 17 plain-English rules with out-of-sample hit rates. Best 1-day rule
+    (calm market + flat ASPI + no big drop → Hold) scores **49.3% vs 38.0% baseline**.
+    The 1-month rule showing 68.5% fires only 317 times → noise.
+- **Two bugs caught in this run — keep both guards forever:**
+  1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
+     The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.
+  2. A **pooled baseline is not a fair benchmark**. Always re-score per stock against its own
+     baseline and sign-test across stocks.
 - **SCOPE IS FIXED — do not change it again.** The project is: start from price only, then add
   macroeconomic variables **step by step**, and measure whether macro beats plain historical
   time-series forecasting. That question is the dissertation. Direction stays the target.
