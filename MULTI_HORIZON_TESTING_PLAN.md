@@ -158,6 +158,24 @@
   methodology chapter as an argument for walk-forward reporting.
 - **No per-stock consistency either:** LOFC and CFIN positive in 62% of folds, HNB in 19%.
   A real sector edge would show across the sector, not in two names.
+- **LSTM / GRU for direction done (2026-08-02):** → `src/direction_lstm_gru.py`,
+  `results/direction/lstm_gru/`. The last untested **model class** — and a genuinely different
+  hypothesis: recurrent nets read the raw **sequence** of the last 30 days, while every earlier
+  model read a flat row of summary features that discards the order.
+  Pooled, 7 walk-forward 12-month folds, 3 seeds majority-voted, per-stock scoring.
+  - **No recurrent model beats the naive baseline at any horizon.** Best is LSTM at 1 day:
+    5/7 folds, +2.9 pp, **p = 0.227**.
+  - **BUT the flat control worked and revealed something real:** LSTM beats the *same data
+    flattened* at **all three** horizons — 1 day **+2.9 vs −1.7**, 1 week −0.4 vs −2.1,
+    1 month −5.4 vs −9.9. **The order of recent days does carry a little signal that summary
+    features throw away.** First time in the project that added complexity actually helped.
+    Not enough to reach the baseline, but honest and worth reporting.
+  - Closes the "did you try deep learning on direction?" question, and finally applies LSTM to the
+    direction target (the project is named after it).
+- **★ REGIME EFFECT — THIRD independent confirmation.** LSTM at 1 day: **0 of 2** folds positive in
+  2019–2020, **5 of 5** positive in 2021–2025. Same shape as the money-supply run and the 1-day
+  re-test. Same code, same features — only the period changes. This is the project's strongest
+  methodological finding and it also explains away the 5/7 folds above.
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.
