@@ -26,6 +26,15 @@
 - **Two nulls added (keep using them):** *train-mean drift* for return RMSE, and
   *always-guess-the-winning-side* for sign accuracy. Without them, 55–57% sign accuracy at
   1–3 months looks like a hit but is not.
+- **Phase B done (2026-08-01):** + Tier-2 (RSI, MACD, volume). Same rows/split/seeds as A, only
+  features change. **Mean gain −1.1 pp; positive at 1/9 horizons; 0/9 beat baseline.**
+  XGBoost gives Tier-2 **41%** of its importance (macd_signal is the top feature at 6/9 horizons)
+  and still gains nothing → the indicators are **redundant with price**, not additive.
+  Return %: Tier-2 made RMSE slightly worse at 9/9. → `results/direction/phase_ablation/`,
+  `src/direction_phase_ablation.py` (reusable — add a new phase by adding a feature list).
+- **Technical features are now exhausted.** Phases A and B together say: nothing in the price
+  chart predicts HNB at any horizon from 1 day to 1 year. The remaining hope is Phase C+
+  (macro / events / sentiment) — information that is *not* in the chart.
 
 ---
 
@@ -140,7 +149,9 @@ naive "no change" (return).
 | Step 1 baseline (HNB, next-day, price-only, XGBoost) | ✅ done — 36.2%, loses to persistence |
 | Multi-horizon runner (all horizons, Tier-1, XGBoost+Logistic+baselines) | ✅ done — **0/9 horizons beat baseline** |
 | Return % target alongside direction | ✅ done — RMSE ≈ train-mean drift; sign edge 0/9 (real) |
-| Step-by-step indicator ablation (Tiers 2→4) | ⏳ NEXT (Phase B = Tier-2) |
+| Phase B ablation (+Tier-2: RSI, MACD, volume) | ✅ done — **gain −1.1 pp, 0/9 beat baseline** |
+| Phase C ablation (+macro) | ⏳ NEXT |
+| Step-by-step indicator ablation (Tiers 3→4) | ⏳ to do |
 | Collect macro (inflation/FX/M2), dividends, sentiment | ⏳ to do |
 | Sector-aware run (banks/finance/control) | ⏳ to do |
 | Calibrated confidence + economic (trading) backtest | ⏳ later |

@@ -1,0 +1,10 @@
+horizon_days,horizon,tier2_share_of_importance_%,top_feature,top_feature_is_tier2
+1,1 day,38.8,vol_20,False
+5,1 week,40.0,vol_20,False
+10,2 weeks,41.4,macd_signal,True
+15,3 weeks,41.9,macd_signal,True
+22,1 month,41.9,vol_20,False
+44,2 months,40.8,macd_signal,True
+66,3 months,41.6,macd_signal,True
+132,6 months,42.7,macd_signal,True
+252,1 year,44.0,macd_signal,True
