@@ -1,0 +1,2 @@
+metric,strategy_gross_%,buy_and_hold_%,net_10bps_%,net_25bps_%,net_50bps_%,median_position_flips,beats_buy_hold_gross,beats_buy_hold_net_25bps
+median across stock-folds,22.19,6.49,17.35,11.24,0.05,40,88/133,71/133

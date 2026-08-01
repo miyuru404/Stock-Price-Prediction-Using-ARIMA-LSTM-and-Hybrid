@@ -176,6 +176,29 @@
   2019–2020, **5 of 5** positive in 2021–2025. Same shape as the money-supply run and the 1-day
   re-test. Same code, same features — only the period changes. This is the project's strongest
   methodological finding and it also explains away the 5/7 folds above.
+- **Phase H done (2026-08-02) — NEWS SENTIMENT, the last untested source:**
+  → `src/direction_phase_h_sentiment.py`, `src/finance_lexicon.py`,
+  `results/direction/sentiment/`, `cleaned_data/news_sentiment_daily.csv`.
+  149,240 Dailymirror/Newsfirst articles (Kaggle), **9,785 market-relevant**, 2016 → **2022-06**.
+  - **Sentiment gain: −0.8 / −0.7 / +2.4 / +1.6 pp** at 1d / 1wk / 2wk / 1mo. All p ≥ 0.50.
+    **No phase beats the naive baseline at any horizon.**
+  - **Two lexicons (VADER + finance) correlate only 0.416** — two reasonable measures of the same
+    articles substantially disagree. The signal is **fragile**, not just weak. Running one lexicon
+    alone would have hidden this. Always run two.
+  - **Look-ahead guard mattered:** CSE closes 14:30; **36%** of articles were published after the
+    close and were reassigned to the NEXT trading day. Without it those articles report the very
+    move being predicted.
+  - **The regime confound did NOT appear here** — and it inverted: calm 2019–2020 gain **+0.85**
+    (9/16 folds), crisis 2021–2022 **−0.45** (3/12). First phase free of the period effect.
+  - **Honest limitation: only 7 folds per horizon = low power.** State this as "no detectable
+    effect", not a firm null.
+  - Upgrade path: drop the official Loughran-McDonald master dictionary into
+    `cleaned_data/loughran_mcdonald_master.csv` and the script uses it automatically, no code change.
+- **The "attention without payoff" fingerprint has now appeared SIX times:** Tier-2 41%,
+  monthly macro 64%, sector 34%, daily macro 27%, money supply 29%, sentiment 30% — every one with
+  zero or negative gain. Feature importance is not evidence of predictive value.
+- **Twitter dataset REJECTED, do not use:** `SriLankaTweets.csv` covers **2022-07-10 16:55–20:51**
+  — a single four-hour scrape, one calendar day, only 50% English. No time series exists in it.
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.

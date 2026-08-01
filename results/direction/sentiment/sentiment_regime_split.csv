@@ -1,0 +1,3 @@
+period,folds,median_gain_D_to_H,positive
+2019-2020 (calm),16,0.85,9/16
+2021-2022 (crisis),12,-0.45,3/12

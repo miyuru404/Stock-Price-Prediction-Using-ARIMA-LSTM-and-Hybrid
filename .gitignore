@@ -21,3 +21,20 @@ Thumbs.db
 # Scratch
 scratchpad/
 *.tmp
+
+# Large third-party raw datasets — NOT our work, and git keeps them forever once committed.
+# Re-download instead:
+#   kagglehub.dataset_download("ivantha/sri-lanka-news-dataset")   -> news.csv  (85 MB)
+# The DERIVED file cleaned_data/news_sentiment_daily.csv (150 KB) IS committed, so every result
+# in results/direction/sentiment/ stays reproducible without the raw feed.
+news.csv
+SriLankaTweets.csv
+*.csv.gz
+
+# MLflow local store. NOTE: mlflow.db and mlruns/ are ALREADY TRACKED from earlier commits, so
+# these lines have no effect on them today — git keeps following files it already tracks. They are
+# here only to stop anything NEW being added. To actually drop them:
+#   git rm -r --cached mlflow.db mlruns
+# (they would remain in git history; that is a separate, heavier operation)
+mlflow.db
+mlruns/
