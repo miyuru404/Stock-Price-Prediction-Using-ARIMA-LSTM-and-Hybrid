@@ -1,0 +1,12 @@
+group,ticker,mean_gain_pp,best_edge_pp,n_beat
+finance,LFIN,13.2,5.6,1
+bank,SAMP,9.4,2.4,2
+finance,LOFC,8.2,24.7,5
+finance,CFIN,7.5,6.2,4
+bank,HNB,4.8,0.3,1
+control,DIST,4.1,9.7,5
+control,JKH,3.3,8.4,5
+finance,LOLC,1.9,4.6,2
+bank,COMB,1.8,4.6,1
+control,DIAL,-1.8,0.9,1
+control,CTC,-11.0,-1.2,0

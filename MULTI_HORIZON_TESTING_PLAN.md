@@ -57,6 +57,20 @@
   Both are from one stock and one split. **Confirm on other tickers before claiming anything.**
 - **Ranking of what helps (HNB, direction):** sector +2.6 > macro Δ +3.4 vs C but 0 vs A/B >
   Tier-2 −0.9 > macro levels −2.8. Nothing crosses the baseline.
+- **Sector sweep done (2026-08-01):** Phase A vs D on **11 stocks** (3 banks, 4 finance, 4 control),
+  9 horizons = 99 cells. Peer composites exclude the target stock. → `src/direction_sector_sweep.py`,
+  `results/direction/sector_sweep/`.
+  - **Sector gain REPLICATES: +3.8 pp mean, positive in 66/99 cells, 9 of 11 stocks.**
+    HNB was not a fluke. Best LFIN +13.2, SAMP +9.4, LOFC +8.2; worst CTC −11.0.
+  - **The edge does NOT.** Phase D beats the baseline in 27/99 cells (Phase A: 14/99) — but a sign
+    test across stocks gives **p = 0.500 at 1 day and 1 week** (6/11 stocks positive = exact coin
+    flip) and worse at every longer horizon. **Nothing is significant anywhere.**
+  - **HNB's 1–3 week sign edge is REFUTED:** 6/33 cells positive (18%) vs ~50% for a coin flip.
+    Naming the claim before re-testing it is what caught this — keep doing that.
+- **What sector features actually do:** they lift the model from *clearly worse than the baseline*
+  up to *coin flip* at 1 day–1 week, and do nothing at longer horizons. Real effect, no edge.
+- **Standing rule now proven twice:** a gain that replicates is still not a win. Only
+  `edge_pp > 0`, holding across stocks, counts.
 
 ---
 
@@ -174,8 +188,9 @@ naive "no change" (return).
 | Phase B ablation (+Tier-2: RSI, MACD, volume) | ✅ done — **gain −1.1 pp, 0/9 beat baseline** |
 | Phase C ablation (+macro rates) | ✅ done — **gain −2.8 pp, 0/9 beat baseline** |
 | Phase D ablation (+sector: ASPI, peers) | ✅ done — **gain +2.6 pp (first positive), still 0/9** |
-| Sector-aware run: repeat Phase D on banks/finance/control | ⏳ NEXT |
-| Step-by-step indicator ablation (Tier 4: events, sentiment) | ⏳ to do |
+| Sector-aware run: repeat Phase D on banks/finance/control | ✅ done — **gain replicates, edge does not** |
+| Phase E (events: dividends, rate decisions) | ⏳ NEXT |
+| Phase F (news sentiment) | ⏳ to do |
 | Collect macro (inflation/FX/M2), dividends, sentiment | ⏳ to do |
 | Sector-aware run (banks/finance/control) | ⏳ to do |
 | Calibrated confidence + economic (trading) backtest | ⏳ later |

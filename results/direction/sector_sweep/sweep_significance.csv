@@ -1,0 +1,10 @@
+horizon_days,horizon,stocks_with_positive_edge,median_edge_pp,sign_test_p,wilcoxon_p,verdict
+1,1 day,6/11,0.9,0.5,0.35,noise
+5,1 week,6/11,0.2,0.5,0.626,noise
+10,2 weeks,3/11,-3.0,0.967,0.938,noise
+15,3 weeks,3/11,-6.2,0.967,0.938,noise
+22,1 month,2/11,-7.5,0.994,0.972,noise
+44,2 months,2/11,-9.4,0.994,0.995,noise
+66,3 months,3/11,-9.1,0.967,0.938,noise
+132,6 months,2/11,-20.3,0.994,0.988,noise
+252,1 year,0/11,-28.4,1.0,1.0,noise
