@@ -1,0 +1,4 @@
+file,freq,n,from,to,dense_from,months_behind_stock_data,covers_2024_test_window,verdict,note
+inflation_monthly.csv,monthly,283,2003-01-31,2026-07-31,2003,0,True,OK,CCPI chained across 4 base years; NCPI single base 2014-2022 only
+money_supply_monthly.csv,monthly,176,2010-01-31,2024-08-31,2010,23,True,usable but ends 23 months early,source export has 24 BLANK trailing months (2024-Sep..2026-Aug)
+usd_lkr_daily.csv,daily,3461,2010-05-07,2026-07-31,2014,0,True,OK,2010-2013 is sparse (30-162 obs/yr); genuinely daily from 2014

@@ -156,13 +156,25 @@ naive "no change" (return).
 - Monthly rates: policy, sdfr, slfr, tb_3m, tb_12m, awdr, awpr, awlr, **spread**
 - Rate-decision events (35); sector groupings
 
-**COLLECT (CBSL / CSE / news):**
-- Inflation (CPI/NCPI, monthly) — CBSL
-- Exchange rate USD/LKR — CBSL
-- Money supply (M1/M2) — CBSL
+**COLLECTED 2026-08-01** (cleaned by `src/clean_macro_sources.py`, originals in `raw_exports/cbsl/`):
+| File | Freq | Coverage | Verdict |
+|---|---|---|---|
+| `cleaned_data/usd_lkr_daily.csv` | **daily** | 2010-05 → 2026-07 (dense from 2014) | **BEST — use this** |
+| `cleaned_data/inflation_monthly.csv` | monthly | 2003-01 → 2026-07 | OK, but monthly = flat within month |
+| `cleaned_data/money_supply_monthly.csv` | monthly | 2010-01 → **2024-08** | ⚠ **ends inside the test window** |
+
+- CCPI arrives in 4 base years (2002/2006-07/2013/2021) — chained into one continuous index on
+  2021=100 via overlap ratios. Validated: native-base months match the PDFs to 0.05 pp; Sep-2022
+  peak reproduces at 68.7% YoY. Splice factors in `inflation_ccpi_splice_factors.csv`.
+- **Money supply warning:** the CBSL export has 24 blank trailing months. Test window is 2024–2026,
+  so adding M1/M2 would delete almost the whole test set. Use it for explanation, NOT the direction test.
+- USD/LKR before 2014 is patchy (30–162 obs/yr vs ~240 after). Start at 2014.
+
+**STILL TO COLLECT:**
+- Foreign investor net buy/sell, daily, per stock — CSE (highest value remaining)
 - Dividend dates + amounts per stock — CSE
+- CSE announcements / earnings dates + EPS
 - News sentiment (economynext + FinBERT) — scrape + score
-- CSE announcements (earnings etc.)
 
 ---
 
