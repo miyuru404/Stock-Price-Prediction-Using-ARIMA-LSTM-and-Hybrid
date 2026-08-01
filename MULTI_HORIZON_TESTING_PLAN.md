@@ -135,12 +135,29 @@
     the majority baseline. Re-scored per stock against each stock's OWN baseline:
     **1 week collapsed to −0.5 pp (3/7 stocks)** — the pooled win was fake.
     **1 day survived: 6/7 stocks, median +2.5 pp, p = 0.062.**
-  - **That 1-day cell is the strongest result in the whole project — and still not significant.**
-    One horizon out of nine, one window, p just above 0.05. **Do not claim it.** Re-test it on a
-    different window before it is allowed to become a finding.
+  - **That 1-day cell was the strongest result in the whole project — and it is now REFUTED.**
+    See the walk-forward re-test below.
   - **Readable rules:** 17 plain-English rules with out-of-sample hit rates. Best 1-day rule
     (calm market + flat ASPI + no big drop → Hold) scores **49.3% vs 38.0% baseline**.
     The 1-month rule showing 68.5% fires only 317 times → noise.
+- **★ 1-DAY CLAIM RE-TESTED AND REFUTED (2026-08-02):** → `src/direction_1day_retest.py`,
+  `results/direction/retest_1day/`. Walk-forward, **21 non-overlapping 6-month windows**,
+  retrained from scratch each fold, verdict rule fixed **in advance**, 1-week carried as a control,
+  both models reported separately (no cherry-picking the winner per fold).
+
+  | Horizon | Model | Folds positive | Median of fold medians | p | Survives? |
+  |---|---|---|---|---|---|
+  | 1 day | Logistic | 7/21 | **−1.8 pp** | 0.96 | **NO** |
+  | 1 day | XGBoost | 6/21 | **−1.9 pp** | 0.99 | **NO** |
+  | 1 week (control) | XGBoost | 7/21 | −6.0 pp | 0.96 | NO |
+
+  Chance alone would give ~10.5 positive folds. We got 6–7. The +2.5 pp was **one lucky window**.
+- **Window regime effect confirmed a SECOND time:** folds in 2021–2024 are mostly positive
+  (6 of 8), folds in 2016–2020 mostly negative (1 of 10). Apparent skill is a property of the
+  **period**, not the model. This is now backed by two independent runs and belongs in the
+  methodology chapter as an argument for walk-forward reporting.
+- **No per-stock consistency either:** LOFC and CFIN positive in 62% of folds, HNB in 19%.
+  A real sector edge would show across the sector, not in two names.
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.

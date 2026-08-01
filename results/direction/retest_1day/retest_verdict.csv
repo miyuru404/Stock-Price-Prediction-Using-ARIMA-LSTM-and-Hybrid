@@ -1,0 +1,5 @@
+horizon,model,folds_positive,median_of_fold_medians,mean_of_fold_medians,sign_test_p,wilcoxon_p,SURVIVES
+1 day,Logistic,7/21,-1.8,-1.8,0.9608,0.9164,NO
+1 day,XGBoost,6/21,-1.9,-1.79,0.9867,0.966,NO
+1 week (control),Logistic,7/21,-0.9,-3.01,0.9608,0.9797,NO
+1 week (control),XGBoost,7/21,-6.0,-5.39,0.9608,0.9938,NO

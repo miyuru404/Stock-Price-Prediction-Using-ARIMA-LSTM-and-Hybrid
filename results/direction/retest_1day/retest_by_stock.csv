@@ -1,0 +1,8 @@
+ticker,folds,median_edge_logistic,median_edge_xgboost,pct_folds_pos_xgb
+LOFC,21,0.8,4.9,61.9
+CFIN,21,3.0,2.6,61.9
+LFIN,21,0.0,-1.0,42.9
+COMB,21,-4.3,-1.7,38.1
+LOLC,21,-2.4,-3.5,28.6
+HNB,21,-1.9,-4.4,19.0
+SAMP,21,-5.2,-4.9,33.3
