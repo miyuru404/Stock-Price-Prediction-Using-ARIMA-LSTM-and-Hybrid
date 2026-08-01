@@ -71,6 +71,65 @@
   up to *coin flip* at 1 day–1 week, and do nothing at longer horizons. Real effect, no edge.
 - **Standing rule now proven twice:** a gain that replicates is still not a win. Only
   `edge_pp > 0`, holding across stocks, counts.
+- **Phase E done (2026-08-01):** daily macro, all 11 stocks. → `src/direction_daily_macro.py`,
+  `results/direction/daily_macro/`. Tested the "monthly frequency was the problem" hypothesis.
+  - **It wasn't.** Daily USD/LKR gain = **+0.0 pp** (positive in 57/99 cells = coin flip).
+  - Adding daily oil / US 10Y / DXY / CPI made it **worse: −1.9 pp** (−6.0 pp at 1 year).
+  - **0 of 36 phase×horizon combinations reach p < 0.05.** Best is 1 day, 6/11 stocks, p = 0.500 —
+    the same exact coin flip the sector sweep found.
+  - **The macro question is now closed at BOTH frequencies.** Not a data-frequency problem;
+    the information is not there.
+- **The recurring fingerprint (3rd sighting):** the model always *spends* importance on new
+  features — Tier-2 41%, monthly macro 64%, daily macro+global+CPI 27% — and never gains accuracy.
+  Using a feature ≠ profiting from it. Expect this again in any future phase.
+- **Phase F done (2026-08-01):** money supply + the full classic macro set, **window moved** to
+  2024-08 (where the CBSL money data ends) so M1/M2 got a fair test instead of being excluded.
+  Test window becomes **2022-03 → 2024-08 — it contains the 2022 crisis.**
+  → `src/direction_money_supply.py`, `results/direction/money_supply/`.
+  - **Money supply gain: −0.7 pp**, positive in 50/99 cells = exact coin flip. Adds nothing.
+  - Full classic set (money + rates + FX + inflation) = 4 of the 5 Naik & Padhi variables.
+    **Only industrial production (IIP) is still uncollected** — the last macro gap.
+- **⚠ WINDOW SENSITIVITY — important for the write-up.** Moving the test window into the crisis
+  roughly **doubles** the win rate for *every* phase, including price-only (17–27/99 → 43–51/99).
+  Results are **window-dependent, not model-dependent**. This argues for reporting walk-forward or
+  multi-window results in the dissertation rather than a single 80/20 split.
+- **The 1-day near-miss, and why it is not a finding:** 2 of 36 cells reached p < 0.05 (chance
+  gives ~1.8). Both at 1 day — and the **strongest is Phase A, the PRICE-ONLY model**
+  (9/11 stocks, +3.9 pp, p = 0.033). Adding money supply *shrinks* it to +3.2 pp. So it is the
+  crisis window, not macro. Checking the null model is what stopped this becoming a false claim.
+- **Phase G done (2026-08-02):** industrial production (DCS IIP, entered by hand, 2016-01 → 2026-05).
+  → `src/direction_industrial_production.py`, `results/direction/industrial_production/`.
+  - **IIP gain: −6.4 pp**, positive in only 25/99 cells, **0/36 significant.** It makes things worse.
+  - This was the **strongest** variable in the Naik & Padhi reference paper. It still fails here.
+  - **Seasonality guard:** DCS IIP is NOT seasonally adjusted — April drops 10–34 points every year
+    (Sinhala/Tamil New Year), March always peaks. Only YoY-based features used; the mom column is
+    literally named `iip_mom_pct_DO_NOT_USE`. Feeding mom would let the model "predict" the holiday.
+  - Note: sample starts 2016, so this table is not comparable to the 2012-start phases.
+- **★ THE MACRO CHAPTER IS COMPLETE.** All five classic macro variables from the reference paper
+  are now tested against the same protocol:
+
+  | Variable | Phase | Gain |
+  |---|---|---|
+  | Industrial production | G | −6.4 pp |
+  | Money supply (M1/M2/M2b/M4) | F | −0.7 pp |
+  | T-bill / policy rate | C | −2.8 pp (levels actively harmful) |
+  | Exchange rate (daily) | E | +0.0 pp |
+  | Inflation (CCPI) | E | part of −1.9 pp |
+
+  **None beats plain price history.** Adding ALL macro (25/99 cells) is *worse* than sector-only
+  (27/99). The headline result is now fully evidenced.
+- **Why this does not contradict the literature:** papers like Naik & Padhi use cointegration/VECM
+  to ask *"is there a long-run relationship?"* (in-sample, on levels). This project asks
+  *"can you predict the next move?"* (out-of-sample, on direction). Macro **explains**; it does not
+  **predict**. That distinction is the intellectual core of the write-up.
+- **SCOPE IS FIXED — do not change it again.** The project is: start from price only, then add
+  macroeconomic variables **step by step**, and measure whether macro beats plain historical
+  time-series forecasting. That question is the dissertation. Direction stays the target.
+  Sentiment / dividends / earnings are a **later, separate stage** (different data type, harder to
+  collect) and are not part of the macro chapter.
+- **Volatility is deferred and OPTIONAL — it is NOT a replacement target.** If used at all, it is
+  one short supporting section explaining *why* direction fails (the movement is real and its size
+  is predictable; only the sign is not). Do not let a failed test trigger a scope change.
 
 ---
 
@@ -201,8 +260,11 @@ naive "no change" (return).
 | Phase C ablation (+macro rates) | ✅ done — **gain −2.8 pp, 0/9 beat baseline** |
 | Phase D ablation (+sector: ASPI, peers) | ✅ done — **gain +2.6 pp (first positive), still 0/9** |
 | Sector-aware run: repeat Phase D on banks/finance/control | ✅ done — **gain replicates, edge does not** |
-| Phase E (events: dividends, rate decisions) | ⏳ NEXT |
-| Phase F (news sentiment) | ⏳ to do |
+| Phase E (daily macro: FX, oil, US10Y, DXY, CPI) | ✅ done — **+0.0 pp, 0/36 significant** |
+| Phase F (money supply + full classic macro set) | ✅ done — **−0.7 pp, macro chapter closed** |
+| Phase G (industrial production) | ✅ done — **−6.4 pp. MACRO CHAPTER COMPLETE.** |
+| Collect foreign reserves, trade balance (optional extras) | ⏳ optional |
+| Later stage: events (dividends/earnings) then news sentiment | ⏳ separate chapter |
 | Collect macro (inflation/FX/M2), dividends, sentiment | ⏳ to do |
 | Sector-aware run (banks/finance/control) | ⏳ to do |
 | Calibrated confidence + economic (trading) backtest | ⏳ later |

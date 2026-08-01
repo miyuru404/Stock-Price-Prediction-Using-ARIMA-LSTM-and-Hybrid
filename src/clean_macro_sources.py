@@ -240,7 +240,39 @@ if paper.exists():
     print(f"\n  reference paper -> references/{dest.name} (Naik & Padhi, Indian macro vs BSE Sensex)")
 
 print("\n" + "=" * 78)
-print("4. DATA-QUALITY / USABILITY REPORT")
+print("4. INDUSTRIAL PRODUCTION (DCS Index of Industrial Production, entered by hand)")
+print("=" * 78)
+iip_src = RAW.parent / "dcs" / "industrial_production_raw.txt"
+IIP = None
+if not iip_src.exists():
+    print(f"  MISSING: {iip_src}")
+else:
+    IIP = pd.read_csv(iip_src, sep="\t", names=["year", "month", "iip_index"])
+    IIP["date"] = (pd.to_datetime(dict(year=IIP.year, month=IIP.month, day=1))
+                   + pd.offsets.MonthEnd(0))
+    IIP = IIP[["date", "iip_index"]].sort_values("date").reset_index(drop=True)
+
+    # This series is NOT seasonally adjusted. April collapses every single year (Sinhala/Tamil
+    # New Year) and March always peaks, so month-on-month change measures the CALENDAR, not the
+    # economy. Year-on-year cancels the seasonal pattern, so YoY is the only honest change measure
+    # here -- mom is computed for reference but must NOT be used as a model feature.
+    seas = IIP.assign(m=IIP.date.dt.month).groupby("m").iip_index.mean()
+    IIP["iip_mom_pct_DO_NOT_USE"] = (IIP["iip_index"].pct_change() * 100).round(2)
+    IIP["iip_yoy_pct"] = (IIP["iip_index"].pct_change(12) * 100).round(2)
+    IIP["iip_yoy_3mavg"] = IIP["iip_yoy_pct"].rolling(3).mean().round(2)
+    IIP["d_iip_yoy_3m"] = IIP["iip_yoy_pct"].diff(3).round(2)
+    IIP.to_csv(OUT / "industrial_production_monthly.csv", index=False)
+
+    print(f"  -> cleaned_data/industrial_production_monthly.csv  ({len(IIP)} months, "
+          f"{IIP.date.min():%Y-%m} -> {IIP.date.max():%Y-%m})")
+    print(f"  seasonality: April mean {seas[4]:.1f} vs March mean {seas[3]:.1f} "
+          f"(gap {seas[4] - seas[3]:.1f} every year -> New Year holiday)")
+    print("  NOT seasonally adjusted -> use iip_yoy_pct, NEVER the month-on-month column.")
+    print(f"  COVID trough: {IIP.loc[IIP.iip_index.idxmin(), 'date']:%Y-%m} = "
+          f"{IIP.iip_index.min():.1f}")
+
+print("\n" + "=" * 78)
+print("5. DATA-QUALITY / USABILITY REPORT")
 print("=" * 78)
 # The modelling test window is roughly 2024-2026 (last 20% of the daily stock data), so a series
 # that stops before then is unusable for the test set no matter how long its history is.
@@ -276,6 +308,9 @@ if xls is not None:
 if fx_src.exists():
     assess("usd_lkr_daily.csv", fx["date"], "daily", 240,
            "2010-2013 is sparse (30-162 obs/yr); genuinely daily from 2014")
+if IIP is not None:
+    assess("industrial_production_monthly.csv", IIP["date"], "monthly", 12,
+           "NOT seasonally adjusted -> use YoY only; starts 2016 so it shortens the sample")
 
 Q = pd.DataFrame(qrows)
 Q.to_csv(OUT / "_macro_quality_report.csv", index=False)
@@ -289,6 +324,8 @@ print("                          flat within a month — same weakness that sank
 print("  * money_supply_monthly.csv -> WARNING: ends 2024-08, but the test window is 2024-2026.")
 print("                          Including M1/M2 would drop nearly the whole test set.")
 print("                          Use it for explanation/long-run work, NOT for the direction test.")
+print("  * industrial_production_monthly.csv -> current to 2026-05, but starts 2016-01, so it")
+print("                          costs 4 years of stock history. Seasonal: USE YoY ONLY.")
 print("  * Phase C lesson still applies: feed these as CHANGES (yoy/mom/returns), never levels.")
 
 print("\n" + "=" * 78)
@@ -296,7 +333,8 @@ print("SUMMARY — new files in cleaned_data/")
 print("=" * 78)
 for f in ["inflation_monthly.csv", "inflation_cpi_by_base.csv",
           "inflation_ccpi_splice_factors.csv", "money_supply_monthly.csv",
-          "usd_lkr_daily.csv", "_macro_quality_report.csv"]:
+          "usd_lkr_daily.csv", "industrial_production_monthly.csv",
+          "_macro_quality_report.csv"]:
     p = OUT / f
     if p.exists():
         d = pd.read_csv(p)
