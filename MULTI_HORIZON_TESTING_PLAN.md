@@ -199,6 +199,71 @@
   zero or negative gain. Feature importance is not evidence of predictive value.
 - **Twitter dataset REJECTED, do not use:** `SriLankaTweets.csv` covers **2022-07-10 16:55–20:51**
   — a single four-hour scrape, one calendar day, only 50% English. No time series exists in it.
+- **★★ DIAGNOSTICS (2026-08-02) — the null is REAL, and one thing SURVIVED.**
+  → `src/direction_diagnostics.py`, `results/direction/diagnostics/`.
+  1. **POSITIVE CONTROL — the pipeline is not blind.** Same code, same folds. Using **today's**
+     market/macro/news to predict **today's** direction: **68.6% vs 57.4% baseline, +8.2 pp,
+     17/19 folds, p = 0.0004.** Using the *same information one day earlier*: **−4.1 pp, 3/19.**
+     **Gap 13.7 pp.** This is the explain-vs-predict distinction demonstrated in one table, and it
+     proves every earlier null is a real null rather than a broken evaluation.
+     (I had to fix a leak in my own control first — it read 100% because the "lagged" features
+     still contained today's return.)
+  2. **Binary up/down did NOT rescue it** (−4.8 / −1.1 / −2.1 pp). The 3-class dead-zone was not
+     hiding a signal.
+  3. **★ MAGNITUDE-WEIGHTED EDGE — THE FIRST RESULT TO SURVIVE.** The model is *wrong more often*
+     than the baseline (−4.3 pp plain accuracy) but *right on the big moves*:
+     **+7.9 pp at 1 day (15/19 folds, p = 0.0096)** and **+13.2 pp at 1 week (15/19, p = 0.0096)**.
+     **Accuracy was the wrong metric all along.**
+  4. **But it is not exploitable.** Long/short backtest at h=1 (the only non-overlapping horizon):
+     gross **+22.19%** vs buy-and-hold +6.49%, median **40 position flips** per 6-month fold →
+     net **+17.35% @10bps · +11.24% @25bps · +0.05% @50bps**. At realistic CSE costs the edge is
+     **exactly zero** (8/19 folds, p = 0.82).
+  → Write-up line: *a statistically significant magnitude-weighted edge exists at 1-day and 1-week
+  horizons and is entirely consumed by transaction costs* — a real finding AND an economic limit.
+- **Price forecasting revisited with macro + news (2026-08-02):**
+  → `src/price_with_macro_news.py`, `results/price_macro_news/`.
+  **Naive unbeaten: 0 of 133 cases** at either horizon. Best model ARIMA(1,1,1) at 1.004× naive.
+  **All 8 macro/news ablation combinations are NEGATIVE** (−0.008 to −0.078 pp) — adding macro and
+  news makes price forecasting *worse*. Stage 1's univariate conclusion survives the multivariate test.
+- **CSE illiquidity fact:** ~10% of bank/finance days close **exactly unchanged**
+  (LOFC **36.0%**, HNB 12.9%, LOLC 7.2%). Part of why the naive baseline is so strong and why the
+  Hold class dominates. Belongs in the limitations section.
+- **⚠ KNOWN GAP — sentiment was MARKET-WIDE, not company-specific.** One national daily score was
+  applied identically to all 7 stocks, so it could never explain why HNB differs from COMB — and
+  ASPI/peer returns already capture market-wide moves far better. Sentiment was largely redundant
+  by construction. Firm-specific news matching (by company name/ticker mention) is untested.
+- **No multimodal architecture was used.** Text was reduced to a lexicon score before the model saw
+  it, then concatenated into the flat feature table. A true multimodal design (text encoder +
+  numeric encoder, fused at a hidden layer) is untested — reasonable "future work", though the
+  0.42 lexicon agreement suggests limited upside.
+- **★ INDEX TARGETS + A THIRD LEAK CAUGHT (2026-08-02):** S&P SL 20 and ASPI added to
+  `src/price_with_macro_news.py`.
+  - **The leak:** SPSL20 and ASPI do not share a trading calendar (207 SPSL20 dates absent from
+    ASPI, 962 the other way). Forward-filling ASPI across those gaps let it carry a move that
+    SPSL20 only recorded on its **next** row. `aspi_ret_1` correlated **0.742** with SPSL20's
+    FUTURE return but only **0.374** with its own same-day return, and **halved MAPE** —
+    ratio 0.496 vs a true 0.970.
+  - **Fix:** (1) no forward-fill across mismatched calendars — missing dates become NaN and drop;
+    (2) index targets get **no ASPI features at all** (same market measured twice, ~0.95 correlated).
+  - **★ PERMANENT GUARD ADDED:** `leak_scan()` checks every feature's correlation with the
+    same-day vs next-day return on every run and flags anything that tracks the future more
+    closely. Writes `leak_scan.csv`. Now reports **clean**.
+  - **Corrected index result:** best is Ridge price-only, **0.970 (1d) / 0.959 (5d)** vs naive,
+    beating it in only 10/17 and 9/17 folds. Macro and news make it **worse** (1.00–1.10).
+  - **Why indices differ from stocks — a real finding:** lag-1 return autocorrelation is
+    **+0.237 (SPSL20)** and **+0.233 (ASPI)** versus **+0.038 (HNB)**. That is
+    **non-synchronous trading**: illiquid constituents (LOFC unchanged on **37.8%** of days)
+    reprice a day late and smear market shocks across two days. A **one-parameter AR(1)** captures
+    the entire index "edge" — statistically real, economically useless, since exploiting it means
+    trading the very illiquid names that cause it.
+- **★ THREE leak-class bugs have now been caught in this project, and ALL THREE flattered the
+  model:** (1) persistence baseline using a fixed 5-day lookback instead of the matched horizon;
+  (2) a pooled baseline treated as a fair benchmark; (3) ASPI forward-filled across calendars.
+  Errors that produce exciting results survive longer because favourable outcomes attract less
+  scrutiny. This asymmetry belongs in the methodology chapter.
+- **One-step vs multi-step:** all price and direction tests use the **DIRECT** method — the h-step
+  move is predicted in one shot, never by iterating 1-day forecasts. Stage 1's multi-step was
+  **recursive**, which is why naive dominated so heavily there (33% MAPE vs 2.9% here).
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.

@@ -1,0 +1,9 @@
+horizon_days,algo,added,median_MAPE_improvement_pp,cases_improved,sign_test_p
+1,Ridge,P+M (+macro),-0.007,44/169,1.0
+1,Ridge,P+M+N (+macro+news),-0.015,43/169,1.0
+1,XGBoost,P+M (+macro),-0.007,76/169,0.917
+1,XGBoost,P+M+N (+macro+news),-0.019,60/169,0.9999
+5,Ridge,P+M (+macro),-0.041,51/169,1.0
+5,Ridge,P+M+N (+macro+news),-0.055,48/169,1.0
+5,XGBoost,P+M (+macro),-0.085,67/169,0.9973
+5,XGBoost,P+M+N (+macro+news),-0.048,72/169,0.9774

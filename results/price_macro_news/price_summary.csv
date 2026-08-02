@@ -1,0 +1,17 @@
+horizon_days,model,median_MAPE_%,median_ret_RMSE_pp,median_dir_acc_%,MAPE_vs_naive,beats_naive,beats_naive_p
+1,naive (no change),1.174,1.698,8.1,1.0,0/169,1.0
+1,"ARIMA(1,1,1)",1.197,1.711,45.2,1.004,39/169,1.0
+1,Ridge P (price only),1.215,1.728,48.0,1.0188,51/169,1.0
+1,Ridge P+M (+macro),1.232,1.754,47.9,1.0308,38/169,1.0
+1,Ridge P+M+N (+macro+news),1.245,1.76,47.8,1.0414,36/169,1.0
+1,XGBoost P+M (+macro),1.272,1.783,47.4,1.0679,24/169,1.0
+1,XGBoost P+M+N (+macro+news),1.275,1.801,47.8,1.0824,23/169,1.0
+1,XGBoost P (price only),1.292,1.791,49.6,1.0602,31/169,1.0
+5,naive (no change),2.921,3.895,2.6,1.0,0/169,1.0
+5,"ARIMA(1,1,1)",2.93,3.985,49.2,1.0,69/169,0.9932
+5,Ridge P (price only),2.999,3.892,52.1,1.029,57/169,1.0
+5,Ridge P+M (+macro),3.129,4.152,49.6,1.0548,36/169,1.0
+5,XGBoost P (price only),3.158,4.232,50.0,1.1006,24/169,1.0
+5,Ridge P+M+N (+macro+news),3.194,4.16,50.0,1.0601,34/169,1.0
+5,XGBoost P+M+N (+macro+news),3.296,4.308,47.6,1.113,16/169,1.0
+5,XGBoost P+M (+macro),3.311,4.261,47.5,1.132,12/169,1.0
