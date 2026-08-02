@@ -1,0 +1,5 @@
+target,decomposition,MAPE_leaky_%,MAPE_honest_%,MAPE_naive_%,improvement_leaky_%,improvement_honest_%,U2_leaky,U2_honest,R2_leaky,R2_honest,gain_from_leaking_pp
+BANKS,CEEMDAN,0.6864,1.0103,0.8496,19.2,-6.86,0.7943,1.0241,0.999,0.9977,26.06
+BANKS,"wavelet(db4,3)",0.7246,0.8883,0.8496,14.7,-1.8,0.8252,1.0275,0.9989,0.998,16.5
+SPSL20,CEEMDAN,0.6712,0.7725,0.7894,14.98,1.88,0.871,1.0082,0.9984,0.9976,13.1
+SPSL20,"wavelet(db4,3)",0.6735,0.8149,0.7894,14.69,-0.52,0.8635,1.0144,0.9984,0.9973,15.21

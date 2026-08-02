@@ -286,6 +286,142 @@
 - **Fixed split and walk-forward DISAGREE (4th demonstration of the window effect):** ARIMA is
   *worse* than naive on the SPSL20 fixed split but better in 6/7 walk-forward folds; HNB shows the
   reverse. Reporting only one protocol would mislead — publish both, and treat the gap as a finding.
+- **★★★ SECTOR-LEVEL TESTS (2026-08-02) — the target the actual SYSTEM predicts.**
+  → `src/sector_direction.py`, `src/sector_calibration.py`,
+  `results/sector_direction/`, `results/sector_calibration/`.
+  Every earlier phase predicted individual stocks. The product predicts a **sector**. Tested at last.
+  - **Composite autocorrelation — one clear design decision.** BANKS composite **+0.178**, higher
+    than every constituent (0.038 / 0.075 / 0.106). But FINANCE composite is **+0.017** — its
+    constituents have *negative* autocorrelations that cancel. Mixing them gives 0.078.
+    → **Build a BANKS index. Do NOT build a banks+finance index.**
+    (My "6× more predictable" estimate was too strong: composites average 1.2× singles, not 6×.)
+  - **Sector direction: 0 of 24 configurations beat the baseline.** Any grouping, any horizon,
+    binary or 3-class. Leak scan clean.
+  - **Magnitude edge replicates a THIRD time, on BANKS:** +10.2 / +8.1 / +11.5 pp at 1d/1wk/2wk,
+    14–15 of 19 folds each, while plain accuracy edge is *negative*.
+    (Ignore the 3-class magnitude figures of +34/+39 pp — the weighted-majority baseline is
+    degenerate there because "Hold" is wrong on every big move by construction.)
+  - **★ CALIBRATION: 0 of 36 configurations usable.** Every Brier skill score is **negative**;
+    AUC 0.41–0.56 (coin flip). Platt halves calibration error only by collapsing the forecast to
+    near-constant (`prob_std` 0.012–0.054 vs 0.164–0.232 raw) — perfectly calibrated and useless.
+    **THE DASHBOARD MUST NOT DISPLAY A MODEL CONFIDENCE NUMBER.**
+- **★ EVIDENCE-BACKED PRODUCT SPEC** (this is what the 89 experiments bought):
+
+  | Feature | Verdict |
+  |---|---|
+  | Sector indices + historical charts | ✅ **Build** — useful with no prediction at all |
+  | Model confidence % | ❌ **Cut** — 0/36 support it |
+  | Directional forecast | ⚠️ Show, but labelled with the realised track record |
+  | Big-move / elevated-volatility flag | ✅ Backed by the magnitude edge (3 replications) |
+  | Running accuracy history | ✅ **This replaces model confidence** |
+  | Macro + news pipeline | ❌ **Cut** — no value, saves weeks of engineering |
+  | Horizon | 1–10 days strongest; 22 days weak |
+
+- **PRICE + NEWS ONLY (no macro) + HYBRID (2026-08-02):** → `src/price_news_hybrid.py`,
+  `results/price_news_hybrid/`. A clean isolation test: in Phase H news competed with ~30 other
+  columns including macro, which Phase C showed can actively hurt.
+  - **News isolated: 0 of 6 horizons significant** (gain −1.25 to +2.60 pp). **Macro was not
+    masking news** — with nothing else competing, news still contributes nothing.
+  - **Hybrid + news is WORSE than the plain hybrid** on both targets (BANKS U2 0.989 → 1.000,
+    SPSL20 0.987 → 1.017). Plain **ARIMA is the best model in the table** (U2 0.985 / 0.979) and
+    even it is not significant (DM p = 0.30 / 0.46). Simplest wins again.
+  - → Production decision: **cut the news pipeline AND the hybrid stage.** If ARIMA-class
+    forecasting is needed, plain ARIMA is as good and far simpler to run daily.
+- **★ LEAK #4 — SPSL20 vs ASPI calendar, AGAIN.** The `data/processed/spsl20_trading_days_clean.csv`
+  file **deleted every flat day**, misaligning it against ASPI (352 of 1505 rows drop out).
+  Removing `.ffill()` — the Leak #3 fix — was **not enough**. `aspi_ret_1` correlated **0.871** with
+  SPSL20's FUTURE return vs **0.227** with its own same-day return; a trivial "copy the sign of
+  ASPI" rule scored **84.3%**, and the model reported a fake **82.8% accuracy / +20.7 pp edge**.
+  **Corrected: 56.8% accuracy, −5.5 pp edge.**
+  Fix: use `cleaned_data/spsl20_daily_fixed.csv` (ASPI calendar) **and** give index targets no ASPI
+  features at all.
+- **★ THE GUARD NOW HALTS THE RUN.** The leak scan previously only wrote a CSV, and the run
+  continued while the summary line claimed "clean" — that is how the fake +20.7 pp nearly got
+  reported. It now raises `SystemExit`. **A guard that does not stop the run is not a guard.**
+- **FOUR leak-class bugs caught in this project, ALL FOUR flattering the model:** persistence
+  lookback · pooled baseline · ASPI forward-fill · SPSL20 calendar mismatch.
+- **macOS note:** importing torch + XGBoost + statsmodels together segfaults (exit 139, OpenMP
+  conflict). Run those scripts with `KMP_DUPLICATE_LIB_OK=TRUE OMP_NUM_THREADS=1`.
+- **LATE FUSION / STACKING (2026-08-02):** → `src/late_fusion_stacking.py`, `results/late_fusion/`.
+  One model per data source (price / news / macro), combined by a meta-learner, instead of the
+  early-fusion concatenation used everywhere else. Meta-learner trained on **out-of-fold** base
+  predictions via a chronological 70/30 split of each training window.
+  - **0 of 6 configurations beat the baseline.** Late fusion IS less bad than early fusion
+    (better in 5/6) but beats it significantly in only **1/6** — chance.
+  - **★ THE META-LEARNER'S WEIGHTS ARE THE CLEANEST RESULT IN THE PROJECT.** Free to weight the
+    three sources however it likes, it splits **price 29% · news 38% · macro 33%** — roughly even,
+    and leaning *most* on news. If price carried signal and news did not, it would load onto price.
+    **Even allocation = nothing to prefer.** This resolves the ambiguous early-fusion pattern
+    ("news gets 30–60% feature importance but zero accuracy gain").
+  - **Rules out one explanation for the literature gap:** "early fusion drowned the weak signals"
+    is now dead. Giving news and macro dedicated models surfaces nothing.
+- **★ WHY PUBLISHED PAPERS REPORT GAINS AND WE DO NOT — candidate explanations, status:**
+
+  | Explanation | Status |
+  |---|---|
+  | Early fusion drowned weak signals | ❌ **ruled out** (late fusion test) |
+  | Papers omit a naive baseline | ⏳ open — we measured naive R² = 0.9979 on price |
+  | No publication lag on macro (look-ahead leak) | ⏳ open — we lag 21–65 days |
+  | Single favourable split | ⏳ open — window effect confirmed 4× |
+  | In-sample / cointegration ≠ forecasting | ⏳ open |
+  | Decomposition hybrids (CEEMDAN/VMD) | ⏳ **untested by us**; known to leak when decomposed globally |
+  | Publication bias (nulls don't get published) | structural |
+
+  **DONE (2026-08-02) — "reproduce then break it":** → `src/reproduce_then_break.py`,
+  `results/reproduce_then_break/`.
+  - **THE REPRODUCTION FAILED, and that is the finding.** Removing the publication lag, leaking the
+    scaler into the test set, and using a single 80/20 split move the "macro improvement" by
+    **fractions of a percent** (L0: +0.17% BANKS, −0.04% SPSL20). **These three shortcuts are not
+    the mechanism** behind published macro gains. The hypothesis was wrong.
+  - **The likely real mechanism, exposed instead:** R² is **0.9978–0.9984 at every level for every
+    configuration** — and **naive scores 0.9979**. A paper running this exact setup would truthfully
+    report *"R² = 0.998, MAPE = 0.83%, outperforms the benchmark."* The published gain is most
+    likely **model-vs-a-weaker-model**, reported with metrics that cannot distinguish either from a
+    random walk. DM p = 0.48–0.86 throughout.
+  - **Of the three shortcuts, only the SINGLE SPLIT changes the conclusion.** Under L0–L2,
+    `MAPE(price+macro)/MAPE(naive)` is 0.96–0.98 (beats naive); under walk-forward it crosses to
+    **1.027 / 1.026** (worse than naive) on both targets. Fifth confirmation of the window effect.
+  - **Still untested and could genuinely produce large published gains:** (a) **in-sample fitting**
+    (fit and evaluate on the same data — standard in cointegration/VECM work); (b) **decomposition
+    hybrids (CEEMDAN / VMD / wavelet)**, where decomposing the FULL series before splitting is a
+    known, documented leak. The second is the more interesting target — it is the "latest
+    technology" branch of the literature, and demonstrating the leak would be a real contribution.
+
+- **★★★ THE MECHANISM FOUND (2026-08-02) — DECOMPOSITION HYBRIDS LEAK.**
+  → `src/decomposition_leak_test.py`, `results/decomposition_leak/`.
+  Same data, same models, same split. **Only the order of decompose-and-split changes.**
+
+  | Target | Decomposition | LEAKY improvement | HONEST improvement | Gap |
+  |---|---|---|---|---|
+  | BANKS | CEEMDAN | **+19.20%** | **−6.86%** | **26.06 pp** |
+  | BANKS | wavelet(db4,3) | **+14.70%** | −1.80% | 16.50 pp |
+  | SPSL20 | wavelet(db4,3) | **+14.69%** | −0.52% | 15.21 pp |
+  | SPSL20 | CEEMDAN | **+14.98%** | +1.88% | 13.10 pp |
+
+  - **LEAKY (decompose full series, then split — the common published pipeline):** Theil U2
+    **0.794–0.871**, **DM p = 0.0000–0.0199**. All four beat naive significantly.
+  - **HONEST (at each t, decompose only `series[:t]`):** Theil U2 **1.008–1.028** — all four are
+    **worse than a random walk**, none significant (DM p 0.35–0.84).
+  - **Why:** wavelet, EMD/CEEMDAN and VMD are **global** transforms. Every component value at time
+    *t* is computed from the whole series, so training components carry test-period information and
+    test components were built from their own future. The model reads an input that already
+    contains the answer.
+  - **This explains the gap between published hybrid results and this project.** 14–19%
+    improvements at p < 0.0001 are exactly what those papers report. The numbers are real as
+    computed; the pipeline is wrong.
+  - **PUBLISHABLE CLAIM:** *"Decomposition-based hybrids show a 13–26 pp improvement over naive when
+    the series is decomposed before the train/test split (DM p < 0.02). Restricting decomposition to
+    past data at each point yields Theil's U2 of 1.008–1.028 — worse than a random walk — with no
+    significant difference from naive. The reported advantage is an artefact of pipeline order."*
+  - Caveats to state: honest CEEMDAN re-decomposes every 3rd point (runtime); wavelet boundary
+    effects make the most recent component values genuinely unstable — a real property of the
+    method, not a bug in the test.
+
+  **SUPERSEDED PLAN — "reproduce then break it":** run a paper-style evaluation (no naive baseline,
+  single 80/20 split, macro with NO publication lag, price-level target, MAPE/R²), then add each
+  guard one at a time and record where the reported improvement disappears. That turns the
+  objection into a finding: *"we reproduce the improvements reported in the literature and show
+  they vanish when publication lags and naive baselines are applied."*
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.

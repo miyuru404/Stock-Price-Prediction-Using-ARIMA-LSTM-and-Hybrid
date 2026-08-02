@@ -1,0 +1,9 @@
+target,decomposition,pipeline,model,n_test,MAPE_%,MAPE_naive_%,RMSE,R2,Theil_U2,beats_naive,improvement_vs_naive_%,DM_p_vs_naive
+SPSL20,"wavelet(db4,3)",LEAKY (decompose then split),XGB,532,0.6735,0.7894,48.5401,0.998407,0.8635,YES,14.69,0.0026
+SPSL20,"wavelet(db4,3)",HONEST (decompose only the past),XGB,481,0.8149,0.8107,59.4393,0.997331,1.0144,no,-0.52,0.6751
+SPSL20,CEEMDAN,LEAKY (decompose then split),XGB,532,0.6712,0.7894,48.9643,0.998379,0.871,YES,14.98,0.0199
+SPSL20,CEEMDAN,HONEST (decompose only the past),Ridge,161,0.7725,0.7873,56.889,0.997567,1.0082,YES,1.88,0.842
+BANKS,"wavelet(db4,3)",LEAKY (decompose then split),XGB,647,0.7246,0.8496,2.463,0.998894,0.8252,YES,14.7,0.0
+BANKS,"wavelet(db4,3)",HONEST (decompose only the past),XGB,596,0.8883,0.8726,3.1811,0.997986,1.0275,no,-1.8,0.3524
+BANKS,CEEMDAN,LEAKY (decompose then split),XGB,647,0.6864,0.8496,2.3707,0.998975,0.7943,YES,19.2,0.0
+BANKS,CEEMDAN,HONEST (decompose only the past),XGB,199,1.0103,0.9454,3.4296,0.997661,1.0241,no,-6.86,0.3611
