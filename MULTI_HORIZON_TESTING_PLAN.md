@@ -264,6 +264,28 @@
 - **One-step vs multi-step:** all price and direction tests use the **DIRECT** method — the h-step
   move is predicted in one shot, never by iterating 1-day forecasts. Stage 1's multi-step was
   **recursive**, which is why naive dominated so heavily there (33% MAPE vs 2.9% here).
+- **★ HYBRID ARCHITECTURE + PAPER-COMPARABLE EVALUATION (2026-08-02):**
+  → `src/hybrid_arima_lstm_macro_news.py`, `results/hybrid_comparable/`.
+  Two gaps closed at once.
+  - **The hybrid (Zhang 2003) is now properly built and tested:** `Y = L + N`, ARIMA(2,1,0) → L̂,
+    LSTM on ARIMA residuals → N̂, 3 seeds averaged, rolling one-step ARIMA (state updated,
+    parameters frozen). **It does not beat the naive random walk** — SPSL20 Theil U2 = 1.012,
+    HNB 1.005 — and is marginally **worse than plain ARIMA** on both targets.
+  - **The extension (Hybrid+MacroNews)** feeds macro + sentiment into the *residual* model, i.e.
+    the part ARIMA provably cannot explain — the best possible place for it. **It makes things
+    worse:** SPSL20 U2 1.032, HNB U2 1.011, HNB walk-forward **0/7 folds** better than naive.
+  - **COMPARABILITY GAP CLOSED.** Published work reports a fixed 80/20 split with RMSE/MAE/MAPE/R²
+    and claims superiority with the **Diebold-Mariano** test; this project only had baseline-relative
+    edge. Now produced: DM (Newey-West HAC) vs naive AND vs ARIMA, plus **Theil's U2**, on BOTH a
+    fixed split and walk-forward. **Zero of 8 models are significantly better than naive (DM
+    p < 0.05); only 1 of 8 has U2 < 1.**
+- **★ R² ON PRICE LEVELS IS MEANINGLESS — use this in the write-up.** Every model scores
+  **R² = 0.9977–0.9980, including the naive random walk.** Papers reporting R² ≈ 0.99 on a price
+  level are reporting nothing: R² on a level only measures being in the right magnitude. This is a
+  direct, evidenced rebuttal to a very common claim in this literature.
+- **Fixed split and walk-forward DISAGREE (4th demonstration of the window effect):** ARIMA is
+  *worse* than naive on the SPSL20 fixed split but better in 6/7 walk-forward folds; HNB shows the
+  reverse. Reporting only one protocol would mislead — publish both, and treat the gap as a finding.
 - **Two bugs caught in this run — keep both guards forever:**
   1. Persistence baseline must use the **matched horizon** (`past_h`), not a fixed 5-day lookback.
      The wrong version faked +0.8 and +1.5 pp edges at 2 and 3 weeks.
