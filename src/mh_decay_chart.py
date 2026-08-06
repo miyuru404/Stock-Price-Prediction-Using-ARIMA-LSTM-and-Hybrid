@@ -46,7 +46,7 @@ F=pd.DataFrame(index=d.index)
 F["ret1"]=r1;F["ret5"]=c.pct_change(5);F["ret10"]=c.pct_change(10);F["rsi"]=rsi(c)
 F["ma5"]=c/c.rolling(5).mean()-1;F["ma10"]=c/c.rolling(10).mean()-1;F["ma20"]=c/c.rolling(20).mean()-1
 F["mom10"]=c/c.shift(10)-1;F["vol10"]=r1.rolling(10).std();F["vol20"]=r1.rolling(20).std()
-if d["volume"].notna().any(): F["volchg"]=d["volume"]/d["volume"].rolling(5).mean()-1
+if (d["volume"].fillna(0)>0).any(): F["volchg"]=d["volume"]/d["volume"].rolling(5).mean()-1
 for x in macro: F[x]=d[x]
 fc=list(F.columns)
 for h in H: F[f"y{h}"]=c.shift(-h)/c-1
