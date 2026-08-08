@@ -88,13 +88,19 @@ def metrics(pred_ret, h, idx):
 
 test_idx = np.arange(split, len(data))
 
-# ===== NAIVE (persistence: pred return = 0) + majority direction =====
+# ===== BASELINES: Majority (direction) + Persistence (price) split apart =====
 for h in H:
-    act = data[f"y{h}"].iloc[test_idx].values
-    pers = np.zeros(len(test_idx))                       # no change
-    dir_maj = max(np.mean(act>0), np.mean(act<0))*100    # majority-class direction
-    _, mape = metrics(pers, h, test_idx)
-    rows.append({"model":"Naive","horizon":h,"dir_acc":dir_maj,"price_mape":mape})
+    act  = data[f"y{h}"].iloc[test_idx].values
+    m    = np.abs(act) > 1e-9                             # same flat-day mask as metrics()
+    pers = np.zeros(len(test_idx))                        # persistence: pred return = 0
+    _, mape_pers = metrics(pers, h, test_idx)
+    # Majority-class direction baseline (no price forecast -> MAPE not defined)
+    dir_maj = max(np.mean(act[m] > 0), np.mean(act[m] < 0)) * 100
+    rows.append({"model":"Majority","horizon":h,"dir_acc":dir_maj,"price_mape":np.nan})
+    # Persistence baseline: direction from sign of previous realised return
+    prev_ret = data["y1"].shift(1).iloc[test_idx].values
+    dir_pers = np.mean(np.sign(prev_ret[m]) == np.sign(act[m])) * 100
+    rows.append({"model":"Persistence","horizon":h,"dir_acc":dir_pers,"price_mape":mape_pers})
 
 # ===== RANDOM FOREST (multi-output, one fit) =====
 Ytr = data[[f"y{h}" for h in H]].iloc[:split].values
@@ -160,14 +166,17 @@ try:
     origins = list(range(split, len(data)-max(H), stride))
     ax_pred = {h: [] for h in H}; ax_oidx = []
     for o in origins:
-        # condition on data UP TO o only (same params), then pure out-of-sample forecast.
-        r_o = res.apply(lp[:o], exog=ex[:o])
-        fex = np.tile(ex[o-1], (max(H), 1))              # hold macro at last known value
+        # condition on data THROUGH index o (inclusive) so forecast step 1 lands on o+1.
+        r_o = res.apply(lp[:o+1], exog=ex[:o+1])
+        fex = np.tile(ex[o], (max(H), 1))                # hold macro at last KNOWN row (index o)
         fc = np.asarray(r_o.get_forecast(max(H), exog=fex).predicted_mean)  # steps 1..maxH
-        base = data["price"].iloc[o]
+        base = data["price"].iloc[o]                     # last observed price
         for h in H: ax_pred[h].append(np.exp(fc[h-1])/base - 1)   # h-ahead
         ax_oidx.append(o)
     ax_oidx = np.array(ax_oidx)
+    # ARIMAX at h=1 should not be systematically inverted; <40% signals an alignment error.
+    d1 = metrics(np.array(ax_pred[1]), 1, ax_oidx)[0]
+    assert d1 > 40, f"ARIMAX h=1 direction {d1:.1f}% - check forecast alignment"
     for h in H:
         da,mp = metrics(np.array(ax_pred[h]), h, ax_oidx); rows.append({"model":"ARIMAX","horizon":h,"dir_acc":da,"price_mape":mp})
 except Exception as e:
@@ -178,15 +187,17 @@ except Exception as e:
 res_df = pd.DataFrame(rows)
 res_df["horizon_lbl"] = res_df["horizon"].map(dict(zip(H, HLAB)))
 res_df.round(2).to_csv(OUT/f"{TICKER}_results.csv", index=False)
+DIR_ORDER = ["Majority","Persistence","ARIMAX","RandomForest","CNN-LSTM"]
+PRICE_ORDER = ["Persistence","ARIMAX","RandomForest","CNN-LSTM"]
 print("\n=== DIRECTION ACCURACY (%) by model x horizon ===")
-piv_d = res_df.pivot(index="model", columns="horizon", values="dir_acc").reindex(["Naive","ARIMAX","RandomForest","CNN-LSTM"])[H]
+piv_d = res_df.pivot(index="model", columns="horizon", values="dir_acc").reindex(DIR_ORDER)[H]
 piv_d.columns = HLAB; print(piv_d.round(1).to_string())
-print("\n=== PRICE MAPE (%) by model x horizon ===")
-piv_m = res_df.pivot(index="model", columns="horizon", values="price_mape").reindex(["Naive","ARIMAX","RandomForest","CNN-LSTM"])[H]
+print("\n=== PRICE MAPE (%) by model x horizon  (Persistence = naive-0 baseline) ===")
+piv_m = res_df.pivot(index="model", columns="horizon", values="price_mape").reindex(PRICE_ORDER)[H]
 piv_m.columns = HLAB; print(piv_m.round(2).to_string())
 
 fig,(a1,a2)=plt.subplots(1,2,figsize=(15,5.5))
-for m in ["Naive","ARIMAX","RandomForest","CNN-LSTM"]:
+for m in DIR_ORDER:
     s=res_df[res_df.model==m]
     a1.plot(range(len(H)), s.set_index("horizon").reindex(H)["dir_acc"], "o-", label=m)
     a2.plot(range(len(H)), s.set_index("horizon").reindex(H)["price_mape"], "o-", label=m)

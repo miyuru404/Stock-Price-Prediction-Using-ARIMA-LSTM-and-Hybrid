@@ -79,7 +79,7 @@ def preds_at(origins):
     for k,o in enumerate(origins):
         P["RandomForest"][k]=rf.predict(data[fcs].iloc[[o]].values)[0]
         P["CNN-LSTM"][k]=net(torch.tensor(Xs[o-WIN:o][None].astype(np.float32))).detach().numpy()[0]
-        r_o=ar.apply(lp[:o],exog=ex[:o]); fex=np.tile(ex[o-1],(max(H),1))
+        r_o=ar.apply(lp[:o+1],exog=ex[:o+1]); fex=np.tile(ex[o],(max(H),1))  # condition THROUGH o
         f=np.exp(np.asarray(r_o.get_forecast(max(H),exog=fex).predicted_mean))
         base=data["price"].iloc[o]; P["ARIMAX"][k]=np.array([f[h-1]/base-1 for h in H])
     return P
@@ -92,29 +92,62 @@ def mape_per_h(pred, origins):
         pp=base*(1+pred[:,j]); out.append(np.mean(np.abs(act-pp)/act)*100)
     return np.array(out)
 
-# ---- validation origins (train tail) to DECIDE switch weights, no test peeking ----
+def dir_per_h(pred, origins):
+    """Directional accuracy per horizon for a (n_origins, n_horizons) array."""
+    out=[]; oi=np.array(origins)
+    for j,h in enumerate(H):
+        act=data[f"y{h}"].iloc[oi].values
+        m=np.abs(act)>1e-9                                # drop flat outcomes
+        out.append(np.mean(np.sign(pred[m,j])==np.sign(act[m]))*100)
+    return out
+
+def dir_majority(origins):
+    out=[]; oi=np.array(origins)
+    for h in H:
+        act=data[f"y{h}"].iloc[oi].values; m=np.abs(act)>1e-9
+        out.append(max(np.mean(act[m]>0),np.mean(act[m]<0))*100)
+    return out
+
+# ---- validation origins (train tail) to DECIDE switch picks, no test peeking ----
 val_lo=int(split*0.8); val_origins=list(range(val_lo, split-max(H), max(1,(split-max(H)-val_lo)//60)))
 Pval=preds_at(val_origins)
 val_mape={m:mape_per_h(Pval[m],val_origins) for m in Pval}
-switch_pick=[min(["ARIMAX","RandomForest","CNN-LSTM"], key=lambda m: val_mape[m][j]) for j in range(len(H))]
+val_dir ={m:dir_per_h(Pval[m],val_origins) for m in Pval}
+switch_pick_mape=[min(["ARIMAX","RandomForest","CNN-LSTM"], key=lambda m: val_mape[m][j]) for j in range(len(H))]
+switch_pick_dir =[max(["ARIMAX","RandomForest","CNN-LSTM"], key=lambda m: val_dir[m][j])  for j in range(len(H))]
 
 # ---- test origins ----
 stride=max(1,(len(data)-max(H)-split)//120); test_origins=list(range(split, len(data)-max(H), stride))
 Pt=preds_at(test_origins)
+# ARIMAX at h=1 should not be systematically inverted; <40% signals an alignment error.
+d1=dir_per_h(Pt["ARIMAX"],test_origins)[0]
+assert d1>40, f"ARIMAX h=1 direction {d1:.1f}% - check forecast alignment"
 naive=np.zeros((len(test_origins),len(H)))
 avg2=(Pt["ARIMAX"]+Pt["RandomForest"])/2
 avg3=(Pt["ARIMAX"]+Pt["RandomForest"]+Pt["CNN-LSTM"])/3
-switch=np.column_stack([Pt[switch_pick[j]][:,j] for j in range(len(H))])
+switch_mape=np.column_stack([Pt[switch_pick_mape[j]][:,j] for j in range(len(H))])
+switch_dir =np.column_stack([Pt[switch_pick_dir[j]][:,j]  for j in range(len(H))])
 
 M={"Naive":naive,"ARIMAX":Pt["ARIMAX"],"RandomForest":Pt["RandomForest"],"CNN-LSTM":Pt["CNN-LSTM"],
-   "AVG2(AR+RF)":avg2,"AVG3(all)":avg3,"SWITCH":switch}
-tab=pd.DataFrame({m:mape_per_h(M[m],test_origins) for m in M}, index=HLAB).T
+   "AVG2(AR+RF)":avg2,"AVG3(all)":avg3,"SWITCH-mape":switch_mape,"SWITCH-dir":switch_dir}
+tab_mape=pd.DataFrame({m:mape_per_h(M[m],test_origins) for m in M}, index=HLAB).T
+tab_dir =pd.DataFrame({m:dir_per_h(M[m], test_origins) for m in M}, index=HLAB).T
+tab_dir.loc["Majority"]=dir_majority(test_origins)       # reference row
+
 print(f"\n{T} — PRICE MAPE (%) by model/combo x horizon  (lower=better)")
-print(tab.round(2).to_string())
-nb=(tab<tab.loc["Naive"]-1e-9).sum(1)
-print("\nHorizons where each BEATS naive (out of 11):")
-print(nb.to_string())
-print("\nSWITCH picked per horizon (chosen on validation, not test):")
-print(dict(zip(HLAB,switch_pick)))
-tab.round(3).to_csv(OUT/f"{T}_ensemble.csv")
-print(f"\nsaved {T}_ensemble.csv")
+print(tab_mape.round(2).to_string())
+nb=(tab_mape<tab_mape.loc["Naive"]-1e-9).sum(1)
+print("\nHorizons where each BEATS naive on MAPE (out of 11):"); print(nb.to_string())
+print(f"\n{T} — DIRECTIONAL ACCURACY (%) by model/combo x horizon  (higher=better)")
+print(tab_dir.round(1).to_string())
+# does AVG2 beat BOTH components on direction?
+beat_both=[]
+for j,h in enumerate(H):
+    a=tab_dir.loc["AVG2(AR+RF)"].iloc[j]; ar=tab_dir.loc["ARIMAX"].iloc[j]; rf=tab_dir.loc["RandomForest"].iloc[j]
+    beat_both.append(a>ar and a>rf)
+print(f"\nAVG2 beats BOTH ARIMAX & RF on direction at: {[HLAB[j] for j in range(len(H)) if beat_both[j]] or 'NONE'}")
+print("SWITCH-dir picks (validation):", dict(zip(HLAB,switch_pick_dir)))
+tab_mape.round(3).to_csv(OUT/f"{T}_ensemble.csv")            # keep original name (MAPE) for back-compat
+tab_mape.round(3).to_csv(OUT/f"{T}_ensemble_mape.csv")
+tab_dir.round(2).to_csv(OUT/f"{T}_ensemble_direction.csv")
+print(f"\nsaved {T}_ensemble.csv + {T}_ensemble_mape.csv + {T}_ensemble_direction.csv")
